@@ -13,7 +13,8 @@ Each set changes type, widget shapes and the background, not just colors.
 |---|---|---|
 | Deep space, Nebula, Aurora, Lunar | Light and dark | Glass panes over drifting dust or a soft glow |
 | Paper | Light and dark (Graphite) | Minimal: no boxes, crop marks, big type |
-| Fractal | Light and dark | A live, slowly morphing fractal behind smoked glass |
+| Fractal | Light and dark | A live six-fold kaleidoscope fractal behind smoked glass |
+| Tie-dye | Light and dark | A living ice-dye shirt: mirrored fold, bleeding colours, crumple creases |
 | Phosphor | Dark only | A terminal in your accent color |
 | Ashfall | Dark only | Falling ash, rising embers, old-style numerals |
 
