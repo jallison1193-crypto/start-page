@@ -263,25 +263,38 @@
   .days a.out { color: var(--faint); }
   .days a.today { background: var(--halpha); color: var(--void); font-weight: 600; }
 
-  .agenda { margin-top: 28px; }
-  .agenda-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-  .agenda-head h3 { margin: 0; font-size: 1rem; font-weight: 500; }
-  .gcal-frame {
-    width: 100%;
-    height: 380px;
-    border: 0;
-    border-radius: 12px;
-    /* Google's embed only comes in light colors, so invert it into the night palette */
-    filter: invert(0.92) hue-rotate(180deg) saturate(0.8) contrast(0.95);
-    background: #fff;
+  /* ---------- Tonight's sky ---------- */
+  .sky-panel { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .sky-panel h3 {
+    margin: 0 0 18px;
+    font-family: var(--display);
+    font-weight: 200;
+    font-size: 1.6rem;
+    line-height: 1;
   }
-  .gcal-setup { color: var(--dust); }
-  .gcal-setup p { margin: 0 0 12px; }
-  .gcal-setup button {
-    background: var(--oiii); color: var(--void);
-    border: 0; border-radius: 999px;
-    padding: 8px 16px; font-weight: 500; cursor: pointer;
+  .moon-row { display: flex; align-items: center; gap: 18px; }
+  .moon { width: 64px; height: 64px; flex: none; filter: drop-shadow(0 0 10px rgba(232, 238, 247, 0.28)); }
+  .moon-name { margin: 0; font-weight: 500; }
+  .dim { color: var(--dust); }
+  .moon-row .dim { margin: 2px 0 0; font-size: 0.875rem; }
+  .sun-row { display: flex; gap: 28px; margin: 22px 0 0; }
+  .sun-row div { display: flex; flex-direction: column; }
+  .sun-row .dim { font-size: 0.8rem; }
+  .sun-row strong { font-weight: 500; font-variant-numeric: tabular-nums; }
+  .hours {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
   }
+  .hours li { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; }
+  .hours .h { color: var(--faint); }
+  .hours .t { font-size: 0.95rem; color: var(--starlight); }
+  .hours .r { color: var(--oiii); min-height: 1.2em; }
+  .hours li:first-child .h { color: var(--halpha); }
 
   /* ---------- Dialogs ---------- */
   dialog {
@@ -377,13 +390,25 @@
     </div>
     <div class="days" id="days"></div>
 
-    <div class="agenda">
-      <div class="agenda-head">
-        <h3>Coming up</h3>
-        <button class="quiet" id="gcalChange" type="button" hidden>Change calendar</button>
+    <section class="sky-panel" aria-labelledby="skyTitle">
+      <h3 id="skyTitle">Tonight's sky</h3>
+      <div class="moon-row">
+        <svg class="moon" viewBox="-32 -32 64 64" aria-hidden="true">
+          <circle r="30" fill="#141A26"/>
+          <path id="moonLit" fill="#E8EEF7"/>
+        </svg>
+        <div>
+          <p class="moon-name" id="moonName"></p>
+          <p class="dim" id="moonInfo"></p>
+        </div>
       </div>
-      <div id="gcalSlot"></div>
-    </div>
+      <div class="sun-row">
+        <div><span class="dim">Sunrise</span><strong id="sunrise">--</strong></div>
+        <div><span class="dim">Sunset</span><strong id="sunset">--</strong></div>
+        <div><span class="dim">Daylight</span><strong id="daylight">--</strong></div>
+      </div>
+      <ol class="hours" id="hours" aria-label="Next 8 hours"></ol>
+    </section>
   </aside>
 </main>
 
@@ -397,19 +422,6 @@
     <div class="dialog-actions">
       <button class="quiet" value="cancel" formnovalidate>Cancel</button>
       <button class="primary" id="siteSave" value="save">Add site</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="gcalDialog">
-  <form method="dialog" id="gcalForm">
-    <h2>Show your Google Calendar</h2>
-    <label>Calendar address or embed link<input id="gcalInput" placeholder="you@gmail.com"></label>
-    <p class="hint">Your Gmail address works for your main calendar. For another calendar, open Google Calendar, go to its settings, and copy the link from "Embed code".</p>
-    <p class="error" id="gcalError"></p>
-    <div class="dialog-actions">
-      <button class="quiet" value="cancel" formnovalidate>Cancel</button>
-      <button class="primary" value="save">Show calendar</button>
     </div>
   </form>
 </dialog>
@@ -542,8 +554,9 @@ const SKY_WORDS = {
 };
 async function weather() {
   const url = 'https://api.open-meteo.com/v1/forecast?latitude=39.9387&longitude=-75.2716'
-    + '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min'
-    + '&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=1';
+    + '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset'
+    + '&hourly=temperature_2m,precipitation_probability'
+    + '&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=2';
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.status);
@@ -553,6 +566,8 @@ async function weather() {
     const hi = Math.round(d.daily.temperature_2m_max[0]);
     const lo = Math.round(d.daily.temperature_2m_min[0]);
     $('weather').textContent = `${temp}° and ${words} in Lansdowne. High ${hi}°, low ${lo}°.`;
+    renderSun(d.daily);
+    renderHours(d.hourly);
   } catch {
     $('weather').textContent = "Weather isn't loading right now. It'll try again in 15 minutes.";
   }
@@ -848,53 +863,92 @@ $('nextMonth').addEventListener('click', () => { shown.setMonth(shown.getMonth()
 $('thisMonth').addEventListener('click', () => { shown = new Date(); shown.setDate(1); renderMonth(); });
 renderMonth();
 
-// ---------- Google Calendar agenda ----------
-function gcalUrl(input) {
-  const s = input.trim();
-  if (!s) return null;
-  if (s.includes('calendar.google.com')) {
-    const src = s.match(/src="([^"]+)"/);           // accept a pasted <iframe> embed code too
-    const url = src ? src[1] : s;
-    return url.startsWith('http') ? url : null;
+// ---------- Tonight's sky panel ----------
+const SYNODIC = 29.530588853;                         // days from one new moon to the next
+const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);  // a new moon used as the starting point
+
+const shortTime = (date) =>
+  date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toLowerCase();
+
+function moonPhase(now = new Date()) {
+  const days = (now - KNOWN_NEW_MOON) / 864e5;
+  return ((days % SYNODIC) + SYNODIC) % SYNODIC / SYNODIC;   // 0 new, 0.5 full, back to 1
+}
+
+function moonName(p) {
+  if (p < 0.03 || p > 0.97) return 'New moon';
+  if (p < 0.22) return 'Waxing crescent';
+  if (p < 0.28) return 'First quarter';
+  if (p < 0.47) return 'Waxing gibbous';
+  if (p < 0.53) return 'Full moon';
+  if (p < 0.72) return 'Waning gibbous';
+  if (p < 0.78) return 'Last quarter';
+  return 'Waning crescent';
+}
+
+// Draw the lit part: an outer half circle plus the curved shadow line (terminator)
+function moonPath(p, r = 30) {
+  const k = Math.cos(2 * Math.PI * p);      // 1 at new moon, -1 at full
+  const rx = Math.abs(k) * r;
+  const waxing = p < 0.5;
+  const outer = waxing ? 1 : 0;
+  const term = waxing ? (k > 0 ? 0 : 1) : (k > 0 ? 1 : 0);
+  return `M0 ${-r} A${r} ${r} 0 0 ${outer} 0 ${r} A${rx} ${r} 0 0 ${term} 0 ${-r}Z`;
+}
+
+function renderMoon() {
+  const now = new Date();
+  const p = moonPhase(now);
+  const lit = Math.round(((1 - Math.cos(2 * Math.PI * p)) / 2) * 100);
+  $('moonLit').setAttribute('d', moonPath(p));
+  $('moonName').textContent = moonName(p);
+
+  const daysToFull = ((0.5 - p + 1) % 1) * SYNODIC;
+  let next;
+  if (daysToFull < 1 || daysToFull > SYNODIC - 1) next = 'Full moon tonight.';
+  else {
+    const full = new Date(now.getTime() + daysToFull * 864e5);
+    next = `Next full moon ${full.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}.`;
   }
-  if (!s.includes('@')) return null;
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  return 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(s)
-    + '&ctz=' + encodeURIComponent(tz)
-    + '&mode=AGENDA&showTitle=0&showNav=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0&showDate=0';
+  $('moonInfo').textContent = `${lit}% lit. ${next}`;
+
+  const h = now.getHours();
+  $('skyTitle').textContent = h >= 17 || h < 5 ? 'Tonight’s sky' : 'Today’s sky';
 }
-function renderGcal() {
-  const url = store.get('np.gcal', null);
-  const slot = $('gcalSlot');
-  $('gcalChange').hidden = !url;
-  if (url) {
-    slot.innerHTML = '';
-    const frame = document.createElement('iframe');
-    frame.className = 'gcal-frame';
-    frame.title = 'Your Google Calendar';
-    frame.src = url;
-    slot.appendChild(frame);
-  } else {
-    slot.innerHTML = '<div class="gcal-setup"><p>Connect your Google Calendar to see what’s next.</p>'
-      + '<button type="button" id="gcalStart">Connect calendar</button></div>';
-    $('gcalStart').addEventListener('click', openGcal);
+
+function renderSun(daily) {
+  // Open-Meteo gives local times like "2026-11-03T06:38", which JS reads as local time
+  const rise = new Date(daily.sunrise[0]);
+  const set = new Date(daily.sunset[0]);
+  $('sunrise').textContent = shortTime(rise);
+  $('sunset').textContent = shortTime(set);
+  const mins = Math.round((set - rise) / 60000);
+  $('daylight').textContent = `${Math.floor(mins / 60)}h ${mins % 60}m`;
+}
+
+function renderHours(hourly) {
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  const start = hourly.time.findIndex((t) => new Date(t) >= now);
+  if (start < 0) return;
+  const list = $('hours');
+  list.innerHTML = '';
+  for (let i = start; i < start + 8 && i < hourly.time.length; i++) {
+    const t = new Date(hourly.time[i]);
+    const h = t.getHours();
+    const label = i === start ? 'Now' : `${((h + 11) % 12) + 1}${h < 12 ? 'a' : 'p'}`;
+    const rain = hourly.precipitation_probability[i];
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="h">${label}</span>`
+      + `<span class="t">${Math.round(hourly.temperature_2m[i])}°</span>`
+      + `<span class="r">${rain >= 20 ? rain + '%' : ''}</span>`;
+    li.title = rain >= 20 ? `${rain}% chance of rain` : '';
+    list.appendChild(li);
   }
 }
-function openGcal() {
-  $('gcalInput').value = '';
-  $('gcalError').textContent = '';
-  $('gcalDialog').showModal();
-}
-$('gcalChange').addEventListener('click', openGcal);
-$('gcalInput').addEventListener('input', () => { $('gcalError').textContent = ''; });
-$('gcalForm').addEventListener('submit', (e) => {
-  if (e.submitter?.value !== 'save') return;
-  const url = gcalUrl($('gcalInput').value);
-  if (!url) { e.preventDefault(); $('gcalError').textContent = 'Enter your Gmail address or paste the embed link from Google Calendar.'; return; }
-  store.set('np.gcal', url);
-  renderGcal();
-});
-renderGcal();
+
+renderMoon();
+setInterval(renderMoon, 30 * 60 * 1000);
 </script>
 </body>
 </html>
