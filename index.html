@@ -357,6 +357,7 @@
   <form class="search" id="search" role="search">
     <div class="engines" id="engines">
       <button type="button" data-engine="google">Google</button>
+      <button type="button" data-engine="duckduckgo">DuckDuckGo</button>
       <button type="button" data-engine="chatgpt">ChatGPT</button>
       <button type="button" data-engine="claude">Claude</button>
     </div>
@@ -578,6 +579,7 @@ setInterval(weather, 15 * 60 * 1000);
 // ---------- Search ----------
 const ENGINES = {
   google:  { url: 'https://www.google.com/search?q=', hint: 'Search the web' },
+  duckduckgo: { url: 'https://duckduckgo.com/?q=',    hint: 'Search privately with DuckDuckGo' },
   chatgpt: { url: 'https://chatgpt.com/?q=',          hint: 'Ask ChatGPT' },
   claude:  { url: 'https://claude.ai/new?q=',         hint: 'Ask Claude' }
 };
