@@ -858,6 +858,22 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const setAll = (key, value) => document.querySelectorAll(`[data-b="${key}"]`).forEach((e) => { if (e.textContent !== value) e.textContent = value; });
 const dur = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`; };
 const BASE_TITLE = document.title;
+// Copy right away (inside the click) so it works even where the async clipboard stalls
+function copyText(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+  const before = document.activeElement;
+  document.body.append(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch {}
+  ta.remove();
+  before?.focus?.();
+  if (!ok) navigator.clipboard?.writeText(text).catch(() => {});
+  return ok;
+}
 
 const ICONS = {
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
@@ -1278,7 +1294,7 @@ function renderSearch(b) {
   if (!ENGINES[settings.engine]) settings.engine = 'google';
   b.innerHTML = `<form class="search" role="search">
     <div class="engines">${Object.entries(ENGINES).map(([k, e]) => `<button type="button" data-engine="${k}" aria-pressed="${k === settings.engine}">${e.label}</button>`).join('')}
-      <a class="os-link" href="${BROWSEROS_TASKS}" title="Open scheduled tasks in BrowserOS">${ico('clock')}BrowserOS tasks</a></div>
+      <button class="os-link" type="button" title="Copy the address of BrowserOS scheduled tasks">${ico('clock')}BrowserOS tasks</button></div>
     <label class="field-search">${ico('search')}<input type="search" name="q" autocomplete="off" aria-label="Search" placeholder="${ENGINES[settings.engine].hint}"><kbd title="Press / anywhere to search">/</kbd></label>
   </form>`;
   const form = b.querySelector('form');
@@ -1286,19 +1302,26 @@ function renderSearch(b) {
   form.querySelector('.engines').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
+    if (btn.classList.contains('os-link')) {
+      // BrowserOS won't let a website open its own pages, but typing the address works
+      toast(copyText(BROWSEROS_TASKS)
+        ? 'Address copied. Press Ctrl+L, then Ctrl+V and Enter. Bookmark the page for one-click access.'
+        : 'Copying didn’t work here. Open a new tab with Ctrl+T and pick Scheduled Tasks.');
+      return;
+    }
     settings.engine = btn.dataset.engine;
     saveSettings();
     form.querySelectorAll('.engines button').forEach((x) => x.setAttribute('aria-pressed', String(x === btn)));
     input.placeholder = ENGINES[settings.engine].hint;
     input.focus();
   });
-  form.addEventListener('submit', async (e) => {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
     const q = input.value.trim();
     if (!q) return;
     const engine = ENGINES[settings.engine];
     if (engine.copy) {
-      try { await navigator.clipboard.writeText(q); } catch {}
+      copyText(q);
       location.href = engine.url;
     } else {
       location.href = engine.url + encodeURIComponent(q);
