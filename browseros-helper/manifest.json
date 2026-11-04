@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Start page helper",
+  "version": "1.0",
+  "description": "Lets your start page open BrowserOS pages, like Scheduled Tasks, in one click.",
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://jallison1193-crypto.github.io/start-page/*", "http://localhost/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

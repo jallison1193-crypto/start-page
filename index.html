@@ -9,7 +9,26 @@
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
 // Decide light or dark before the page paints, so it never flashes the wrong theme
+// Some theme sets only make sense in one mode
+window.SET_ONLY = { phosphor: 'dark', ashfall: 'dark' };
+// Each theme set brings its own typefaces, loaded only when that set is in use
+window.SET_FONTS = {
+  paper: 'family=Funnel+Display:wght@300..800&family=Funnel+Sans:wght@300..700',
+  fractal: 'family=Unbounded:wght@200..500',
+  phosphor: 'family=Martian+Mono:wght@200..500',
+  ashfall: 'family=Cormorant:ital,wght@0,400;1,300;1,400'
+};
+window.loadSetFonts = function (set) {
+  const q = SET_FONTS[set];
+  if (!q || document.getElementById('font-' + set)) return;
+  const link = document.createElement('link');
+  link.id = 'font-' + set;
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?' + q + '&display=swap';
+  document.head.append(link);
+};
 window.pickTheme = function (s, wx) {
+  if (SET_ONLY[s.set]) return SET_ONLY[s.set];
   if (s.theme === 'light' || s.theme === 'dark') return s.theme;
   if (s.theme === 'system') return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
   if (s.theme !== 'schedule') return 'dark';
@@ -30,6 +49,7 @@ try {
   document.documentElement.dataset.theme = pickTheme({ theme: 'dark', ...s }, w && w.data);
   document.documentElement.dataset.accent = s.accent || 'teal';
   document.documentElement.dataset.set = s.set || 'space';
+  loadSetFonts(s.set);
 } catch {}
 </script>
 <style>
@@ -96,6 +116,10 @@ try {
   [data-accent="silver"] { --accent: #C9D3E3; --accent-rgb: 201, 211, 227; --now: #F07A93; --now-rgb: 240, 122, 147; }
   [data-theme="light"][data-accent="green"]  { --accent: #13804A; --accent-rgb: 19, 128, 74; --now: #C8325A; --now-rgb: 200, 50, 90; }
   [data-theme="light"][data-accent="silver"] { --accent: #3F4A5C; --accent-rgb: 63, 74, 92; --now: #C8325A; --now-rgb: 200, 50, 90; }
+  [data-accent="cobalt"] { --accent: #8EA4FF; --accent-rgb: 142, 164, 255; --now: #F07A93; --now-rgb: 240, 122, 147; }
+  [data-accent="ember"]  { --accent: #FF8A4C; --accent-rgb: 255, 138, 76; --now: #E9C46A; --now-rgb: 233, 196, 106; }
+  [data-theme="light"][data-accent="cobalt"] { --accent: #2448E0; --accent-rgb: 36, 72, 224; --now: #C8325A; --now-rgb: 200, 50, 90; }
+  [data-theme="light"][data-accent="ember"]  { --accent: #B4501C; --accent-rgb: 180, 80, 28; --now: #8A6A10; --now-rgb: 138, 106, 16; }
 
   /* Theme sets: the backdrop glow and glass tint behind everything. Deep space is plain black. */
   :root { --neb: none; }
@@ -382,7 +406,8 @@ try {
 
   /* ---------- Weather ---------- */
   .wx-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 0; }
-  .wx-now { display: flex; align-items: center; gap: 12px; flex: none; }
+  .wx-now { display: flex; align-items: center; gap: 12px; flex: 0 1 auto; min-width: 0; }
+  .wx-desc { min-width: 0; }
   .wx-icon svg { width: 38px; height: 38px; }
   .wx-temp { font: 200 3.3rem/1 var(--display); letter-spacing: -0.03em; }
   .wx-desc { display: flex; flex-direction: column; font-size: 0.8125rem; color: var(--dim); line-height: 1.35; }
@@ -601,7 +626,8 @@ try {
   .swatches input:checked + i { box-shadow: 0 0 0 3px var(--pane-solid), 0 0 0 5px var(--c); }
   .swatches input:focus-visible + i { outline: 2px solid var(--ink); outline-offset: 6px; }
   .sw-teal { --c: #79E0D4; } .sw-violet { --c: #A99BFF; } .sw-amber { --c: #F2B872; } .sw-rose { --c: #F07A93; }
-  .sw-green { --c: #86EFAC; } .sw-silver { --c: #C9D3E3; }
+  .sw-green { --c: #86EFAC; } .sw-silver { --c: #C9D3E3; } .sw-cobalt { --c: #8EA4FF; } .sw-ember { --c: #FF8A4C; }
+  [data-theme="light"] .sw-cobalt { --c: #2448E0; } [data-theme="light"] .sw-ember { --c: #B4501C; }
   [data-theme="light"] .sw-teal { --c: #0B8276; } [data-theme="light"] .sw-violet { --c: #5847D2; }
   [data-theme="light"] .sw-amber { --c: #A35F0A; } [data-theme="light"] .sw-rose { --c: #C8325A; }
   [data-theme="light"] .sw-green { --c: #13804A; } [data-theme="light"] .sw-silver { --c: #3F4A5C; }
@@ -617,6 +643,12 @@ try {
   .pv-nebula { --p: radial-gradient(70% 60% at 80% 15%, rgba(150, 100, 255, 0.6), transparent 70%), radial-gradient(60% 50% at 10% 95%, rgba(240, 100, 170, 0.45), transparent 70%), #0B0618; }
   .pv-aurora { --p: radial-gradient(100% 45% at 50% 0%, rgba(70, 240, 170, 0.55), transparent 70%), radial-gradient(50% 40% at 90% 5%, rgba(80, 150, 255, 0.45), transparent 70%), #03080F; }
   .pv-lunar { --p: radial-gradient(90% 70% at 50% 120%, rgba(220, 225, 235, 0.4), transparent 70%), #0B0C0E; }
+  .pv-paper { --p: linear-gradient(#121212, #121212) 9px 10px / 30px 12px no-repeat, linear-gradient(#2448E0, #2448E0) 9px 28px / 14px 2px no-repeat,
+    linear-gradient(#121212, #121212) right 9px bottom 9px / 8px 1px no-repeat, linear-gradient(#121212, #121212) right 9px bottom 9px / 1px 8px no-repeat, #F7F7F5; }
+  .pv-fractal { --p: radial-gradient(30% 34% at 64% 46%, transparent 55%, rgba(169, 155, 255, 0.95) 62%, transparent 70%), radial-gradient(22% 26% at 40% 58%, transparent 50%, rgba(120, 210, 255, 0.8) 58%, transparent 68%), radial-gradient(60% 60% at 55% 50%, rgba(240, 122, 147, 0.35), transparent 70%), #05030A; }
+  .pv-phosphor { --p: linear-gradient(#FFB547, #FFB547) 9px 11px / 36px 3px no-repeat, linear-gradient(#FFB547, #FFB547) 9px 19px / 22px 3px no-repeat, linear-gradient(#FFB547, #FFB547) 9px 30px / 6px 8px no-repeat, repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 181, 71, 0.1) 2px 3px), #000; }
+  .pv-ashfall { --p: radial-gradient(#8F8A86 0.8px, transparent 1.1px) 0 0 / 11px 13px, radial-gradient(#FF8A4C 1px, transparent 1.4px) 5px 7px / 37px 29px, linear-gradient(transparent 55%, rgba(150, 138, 132, 0.3)), #0E0B0B; }
+  .sets { grid-template-columns: repeat(4, 1fr); }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; cursor: pointer; }
   .row strong { display: block; font-weight: 500; }
   .row small { display: block; color: var(--dim); font-size: 0.8125rem; }
@@ -667,6 +699,150 @@ try {
   .toast.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
   .arranging .toast { bottom: 84px; }
 
+  /* ---------- Projects ---------- */
+  .projects { list-style: none; margin: 0 -8px; padding: 0; display: grid; gap: 2px; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+  .proj { position: relative; display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; column-gap: 10px; align-items: center; padding: 6px 8px; border-radius: 12px; color: var(--ink); text-decoration: none; }
+  a.proj:hover { background: var(--hover); }
+  .proj .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--faint)); align-self: start; margin-top: 6px; }
+  .proj .pn { font-size: 0.875rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .proj .pm { font-size: 0.75rem; color: var(--dim); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+  .proj .pm svg { width: 13px; height: 13px; }
+  .proj .px { grid-column: 2 / 4; display: flex; align-items: center; gap: 10px; font-size: 0.8125rem; color: var(--dim); min-width: 0; }
+  .proj .px span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .proj .bar { width: 64px; height: 3px; border-radius: 3px; background: var(--line-strong); flex: none; position: relative; overflow: hidden; }
+  .proj .bar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 3px; }
+  .proj .tools { position: absolute; top: 4px; right: 4px; display: flex; gap: 2px; }
+  .proj .tools button { width: 24px; height: 24px; border: 0; border-radius: 8px; background: var(--pane-solid); color: var(--dim); cursor: pointer; display: grid; place-items: center; box-shadow: 0 0 0 1px var(--line); }
+  .proj .tools svg { width: 14px; height: 14px; }
+  .proj .tools .remove:hover { color: var(--now); }
+  .projects.editing .proj { cursor: grab; box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .proj.dragging { opacity: 0.35; }
+  .proj-add { width: 100%; padding: 10px; border: 1px dashed var(--line-strong); border-radius: 12px; background: none; color: var(--dim); cursor: pointer; font-size: 0.8125rem; }
+  .proj-add:hover { color: var(--accent); border-color: var(--accent); }
+  .projects-w { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  /* Scrolling lists fade out at the bottom instead of showing scroll arrows */
+  .task-list, .projects, .tiles { scrollbar-width: none; }
+  .task-list::-webkit-scrollbar, .projects::-webkit-scrollbar, .tiles::-webkit-scrollbar { display: none; }
+  .task-list, .projects { -webkit-mask-image: linear-gradient(#000 calc(100% - 16px), transparent); mask-image: linear-gradient(#000 calc(100% - 16px), transparent); padding-bottom: 12px; }
+  .task-add { margin-bottom: 4px; flex: none; }
+  .proj-add svg { width: 16px; height: 16px; vertical-align: middle; }
+  .proj-add { padding: 8px; }
+  .gh-act { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; flex: none; }
+  .bars { height: 40px; display: grid; grid-template-columns: repeat(30, 1fr); align-items: end; gap: 2px; }
+  .bars i { display: block; border-radius: 2px 2px 0 0; background: rgba(var(--accent-rgb), 0.75); min-height: 3px; }
+  .bars i.zero { background: var(--line-strong); }
+  .w-head a.w-meta { text-decoration: none; }
+  .w-head a.w-meta:hover { color: var(--ink); }
+  .modal textarea.input { height: 64px; padding: 8px 12px; resize: vertical; }
+  .modal .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  #fx { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+  .field-search .prompt { display: none; }
+
+  /* ---------- Theme set: Paper (light) and Graphite (dark). No boxes, only crop marks ---------- */
+  [data-set="paper"] { --display: "Funnel Display", system-ui, sans-serif; --text: "Funnel Sans", system-ui, sans-serif; }
+  [data-theme="light"][data-set="paper"] {
+    --bg: #F7F7F5; --bg2: #F7F7F5; --ink: #121212; --ink-rgb: 18, 18, 18; --dim: #555555; --faint: #6E6E6E;
+    --line: rgba(18, 18, 18, 0.1); --line-strong: rgba(18, 18, 18, 0.28); --pane: transparent; --pane-solid: #FFFFFF;
+    --field: transparent; --hover: rgba(18, 18, 18, 0.05);
+  }
+  [data-theme="dark"][data-set="paper"] {
+    --bg: #1C1D1F; --bg2: #1C1D1F; --ink: #EDEDEA; --ink-rgb: 237, 237, 234; --dim: #A3A39E; --faint: #8C8C87;
+    --line: rgba(237, 237, 234, 0.1); --line-strong: rgba(237, 237, 234, 0.3); --pane: transparent; --pane-solid: #26272A;
+    --field: transparent; --hover: rgba(237, 237, 234, 0.06);
+  }
+  [data-set="paper"] .widget {
+    --cm: var(--line-strong);
+    border-color: transparent; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none;
+    background: linear-gradient(var(--cm), var(--cm)) 0 0 / 12px 1px no-repeat, linear-gradient(var(--cm), var(--cm)) 0 0 / 1px 12px no-repeat,
+      linear-gradient(var(--cm), var(--cm)) 100% 0 / 12px 1px no-repeat, linear-gradient(var(--cm), var(--cm)) 100% 0 / 1px 12px no-repeat,
+      linear-gradient(var(--cm), var(--cm)) 0 100% / 12px 1px no-repeat, linear-gradient(var(--cm), var(--cm)) 0 100% / 1px 12px no-repeat,
+      linear-gradient(var(--cm), var(--cm)) 100% 100% / 12px 1px no-repeat, linear-gradient(var(--cm), var(--cm)) 100% 100% / 1px 12px no-repeat;
+  }
+  [data-set="paper"] .widget.bare { background: none; }
+  [data-set="paper"] .arranging .widget { background-color: var(--pane-solid); }
+  [data-set="paper"] .time { font-weight: 600; letter-spacing: -0.06em; text-shadow: none; }
+  [data-set="paper"] .time .sub { font-weight: 400; letter-spacing: 0; }
+  [data-set="paper"] .w-head h2 { color: var(--ink); font-weight: 600; }
+  [data-set="paper"] .wx-temp, [data-set="paper"] .tc-day, [data-set="paper"] .ft { font-weight: 300; letter-spacing: -0.04em; }
+  [data-set="paper"] .field-search { border: 0; border-bottom: 2px solid var(--ink); border-radius: 0; padding-left: 0; background: none; }
+  [data-set="paper"] .field-search:focus-within { border-color: var(--accent); }
+  [data-set="paper"] .engines button { border-radius: 0; padding: 0 2px; margin-right: 12px; }
+  [data-set="paper"] .engines button[aria-pressed="true"] { background: none; color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); font-weight: 600; }
+  [data-set="paper"] .os-link { border-radius: 0; }
+  [data-set="paper"] .tab[aria-selected="true"] { background: none; box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
+  [data-set="paper"] .ficon { border-radius: 0; background: none; box-shadow: inset 0 0 0 1px var(--line); }
+  [data-set="paper"] .days a.today { border-radius: 0; }
+  [data-set="paper"] .proj, [data-set="paper"] .tile a { border-radius: 0; }
+  [data-set="paper"] .moon { filter: none; }
+
+  /* ---------- Theme set: Fractal. A live fractal behind smoked glass with iridescent edges ---------- */
+  [data-set="fractal"] { --display: "Unbounded", system-ui, sans-serif; --radius: 28px; }
+  [data-theme="dark"][data-set="fractal"] { --bg: #04030A; --bg2: #04030A; --pane: rgba(6, 4, 14, 0.5); --pane-solid: #0D0A18; }
+  [data-theme="light"][data-set="fractal"] { --bg: #F4F2FA; --bg2: #F4F2FA; --pane: rgba(255, 255, 255, 0.8); --pane-solid: #FFFFFF; }
+  [data-theme="light"][data-set="fractal"] .widget { -webkit-backdrop-filter: blur(28px) saturate(1.1) brightness(1.15); backdrop-filter: blur(28px) saturate(1.1) brightness(1.15); }
+  [data-set="fractal"] .widget { border-color: transparent; -webkit-backdrop-filter: blur(28px) saturate(1.5); backdrop-filter: blur(28px) saturate(1.5); }
+  [data-set="fractal"] .widget.bare, [data-set="ashfall"] .widget.bare { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+  [data-set="fractal"] .widget:not(.bare)::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0.75;
+    background: conic-gradient(from 200deg, rgba(var(--accent-rgb), 0.95), rgba(var(--now-rgb), 0.7), rgba(255, 216, 150, 0.55), rgba(120, 210, 255, 0.7), rgba(var(--accent-rgb), 0.95));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  }
+  [data-set="fractal"] .time { font-weight: 200; font-size: calc(var(--fs) * 0.8); letter-spacing: -0.05em; }
+  [data-theme="dark"][data-set="fractal"] .time { color: #FFFFFF; mix-blend-mode: difference; text-shadow: none; }
+  [data-set="fractal"] .wx-temp, [data-set="fractal"] .tc-day, [data-set="fractal"] .ft { font-weight: 200; letter-spacing: -0.04em; }
+
+  /* ---------- Theme set: Phosphor. A terminal drawn in your accent color ---------- */
+  [data-theme="dark"][data-set="phosphor"] {
+    --display: "Martian Mono", ui-monospace, monospace; --text: "Martian Mono", ui-monospace, monospace; --radius: 0px;
+    --bg: #000000; --bg2: #000000; --ink: var(--accent); --ink-rgb: var(--accent-rgb);
+    --dim: rgba(var(--accent-rgb), 0.74); --faint: rgba(var(--accent-rgb), 0.6);
+    --line: rgba(var(--accent-rgb), 0.2); --line-strong: rgba(var(--accent-rgb), 0.45);
+    --pane: rgba(0, 0, 0, 0.9); --pane-solid: #050403; --field: transparent; --hover: rgba(var(--accent-rgb), 0.1);
+    --on-accent: #000000; --now: var(--accent); --now-rgb: var(--accent-rgb); --sun: var(--accent);
+    --moon-lit: var(--accent); --moon-dark: rgba(var(--accent-rgb), 0.12);
+  }
+  [data-set="phosphor"] body { font-size: 13px; text-shadow: 0 0 6px rgba(var(--accent-rgb), 0.35); }
+  [data-set="phosphor"] body::after {
+    content: ""; position: fixed; inset: 0; z-index: 40; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px), radial-gradient(120% 90% at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.55));
+  }
+  [data-set="phosphor"] .widget { border: 1px solid var(--line-strong); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  [data-set="phosphor"] .widget.bare { border-color: transparent; }
+  [data-set="phosphor"] .w-head h2::before { content: "[ "; }
+  [data-set="phosphor"] .w-head h2::after { content: " ]"; }
+  [data-set="phosphor"] .time { font-weight: 300; font-size: calc(var(--fs) * 0.72); letter-spacing: -0.08em; text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.55); }
+  [data-set="phosphor"] :is(button, .os-link, .field-search, .input, .ficon, .days a, .sizes, .seg, .seg span, .switch, .task-input, .proj, .proj-add, .tile a, .tile .add, .modal, .toast, .arrange-bar, .bars i, .proj .bar, .proj .bar i) { border-radius: 0 !important; }
+  [data-set="phosphor"] .switch::after { border-radius: 0; }
+  [data-set="phosphor"] .field-search { border: 0; background: none; padding-left: 0; gap: 0; }
+  [data-set="phosphor"] .field-search > svg, [data-set="phosphor"] .field-search kbd { display: none; }
+  [data-set="phosphor"] .field-search .prompt { display: inline; white-space: nowrap; margin-right: 10px; color: var(--ink); }
+  [data-set="phosphor"] .field-search input { caret-color: var(--accent); }
+  [data-set="phosphor"] .ficon img { filter: grayscale(1) contrast(1.2); }
+  [data-set="phosphor"] .moon { filter: none; }
+  [data-set="phosphor"] .tt { font-size: 0.9rem; }
+  [data-set="phosphor"] .td, [data-set="phosphor"] .tin { font-size: 0.6875rem; }
+  [data-set="phosphor"] .dir li { gap: 8px; }
+
+  /* ---------- Theme set: Ashfall. Ash and embers, mist, old-style numerals ---------- */
+  [data-theme="dark"][data-set="ashfall"] {
+    --display: "Cormorant", Georgia, serif; --radius: 8px;
+    --bg: #0E0B0B; --bg2: #0A0808; --ink: #E9E2DA; --ink-rgb: 233, 226, 218; --dim: #A59C94; --faint: #857C75;
+    --line: rgba(233, 226, 218, 0.08); --line-strong: rgba(233, 226, 218, 0.17);
+    --pane: rgba(16, 12, 12, 0.74); --pane-solid: #151010; --field: rgba(233, 226, 218, 0.03); --hover: rgba(233, 226, 218, 0.05);
+    --sun: #FF8A4C; --moon-lit: #E9E2DA; --moon-dark: #221B1B; --glow: 0.12;
+  }
+  [data-set="ashfall"] body::after {
+    content: ""; position: fixed; left: 0; right: 0; bottom: 0; height: 40vh; z-index: 0; pointer-events: none;
+    background: linear-gradient(transparent, rgba(150, 138, 132, 0.09) 55%, rgba(150, 138, 132, 0.16));
+  }
+  [data-set="ashfall"] .widget { box-shadow: inset 0 1px 0 rgba(233, 226, 218, 0.05); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  [data-set="ashfall"] .time { font-style: italic; font-weight: 300; font-size: calc(var(--fs) * 1.1); letter-spacing: -0.01em; font-variant-numeric: oldstyle-nums proportional-nums; text-shadow: 0 0 40px rgba(255, 138, 76, 0.12); }
+  [data-set="ashfall"] .w-head h2 { font: italic 400 1.05rem/1.2 var(--display); color: var(--ink); }
+  [data-set="ashfall"] .wx-temp, [data-set="ashfall"] .tc-day, [data-set="ashfall"] .ft, [data-set="ashfall"] .month { font-style: italic; font-variant-numeric: oldstyle-nums; }
+  [data-set="ashfall"] .tt { font-family: var(--display); font-style: italic; font-size: 1.2rem; }
+
   /* ---------- Responsive ---------- */
   @media (max-width: 1000px) {
     :root { --cols: 2; }
@@ -687,6 +863,7 @@ try {
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
+<canvas id="fx" aria-hidden="true" hidden></canvas>
 
 <header class="topbar">
   <button class="pill" id="arrangeBtn" type="button" aria-pressed="false" aria-label="Arrange widgets"><span data-ico="grid"></span><span>Arrange</span></button>
@@ -727,10 +904,15 @@ try {
           <label><input type="radio" name="set" value="nebula"><i class="pv-nebula"></i><span>Nebula</span></label>
           <label><input type="radio" name="set" value="aurora"><i class="pv-aurora"></i><span>Aurora</span></label>
           <label><input type="radio" name="set" value="lunar"><i class="pv-lunar"></i><span>Lunar</span></label>
+          <label><input type="radio" name="set" value="paper"><i class="pv-paper"></i><span>Paper</span></label>
+          <label><input type="radio" name="set" value="fractal"><i class="pv-fractal"></i><span>Fractal</span></label>
+          <label><input type="radio" name="set" value="phosphor"><i class="pv-phosphor"></i><span>Phosphor</span></label>
+          <label><input type="radio" name="set" value="ashfall"><i class="pv-ashfall"></i><span>Ashfall</span></label>
         </div>
       </div>
       <div class="fieldset">
         <span class="label">Mode</span>
+        <p class="hint" id="modeHint" style="margin:0 0 8px" hidden></p>
         <div class="seg" role="radiogroup" aria-label="Theme">
           <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
           <label><input type="radio" name="theme" value="light"><span>Light</span></label>
@@ -758,9 +940,11 @@ try {
           <label><input type="radio" name="accent" value="amber"><i class="sw-amber"></i>Amber</label>
           <label><input type="radio" name="accent" value="rose"><i class="sw-rose"></i>Rose</label>
           <label><input type="radio" name="accent" value="silver"><i class="sw-silver"></i>Silver</label>
+          <label><input type="radio" name="accent" value="cobalt"><i class="sw-cobalt"></i>Cobalt</label>
+          <label><input type="radio" name="accent" value="ember"><i class="sw-ember"></i>Ember</label>
         </div>
       </div>
-      <label class="row"><span><strong>Drifting dust</strong><small>The slow-moving background</small></span><input type="checkbox" class="switch" id="dust"></label>
+      <label class="row"><span><strong>Moving background</strong><small>Dust, ash or the fractal drifting slowly</small></span><input type="checkbox" class="switch" id="dust"></label>
     </section>
 
     <section id="set-widgets">
@@ -768,6 +952,9 @@ try {
       <p class="hint">Turn widgets on or off and pick their size. To move them, close this and press Arrange.</p>
       <ul class="wlist" id="widgetList"></ul>
       <button class="btn quiet" id="resetLayout" type="button">Reset layout</button>
+      <label class="label" for="ghUser" style="margin-top:20px">GitHub username</label>
+      <input class="input" id="ghUser" autocomplete="off" spellcheck="false">
+      <p class="hint" style="margin-top:8px">Projects linked to a public repository show their latest push, and the Projects widget at Large size shows your last 30 days of commits. Private repositories show with a lock.</p>
     </section>
 
     <section id="set-place">
@@ -821,6 +1008,25 @@ try {
     <p class="error" id="siteError"></p>
     <div class="actions">
       <button class="btn primary" id="siteSave" value="save">Add site</button>
+      <button class="btn quiet" value="cancel" formnovalidate>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal" id="projDialog">
+  <form method="dialog" id="projForm">
+    <h2 id="projDialogTitle">Add a project</h2>
+    <label>Name<input class="input" id="projName" maxlength="40" placeholder="Fragrance app"></label>
+    <label>Next step<textarea class="input" id="projNext" maxlength="120" placeholder="Pick the model that writes listings"></textarea></label>
+    <div class="two">
+      <label>Status<select class="input" id="projStatus"><option value="active">Active</option><option value="paused">Paused</option><option value="idea">Idea</option><option value="done">Done</option></select></label>
+      <label>Progress<select class="input" id="projProgress"><option value="">No bar</option><option>10</option><option>25</option><option>40</option><option>50</option><option>60</option><option>75</option><option>90</option><option>100</option></select></label>
+    </div>
+    <label>GitHub repository<input class="input" id="projRepo" placeholder="start-page" autocomplete="off" spellcheck="false"></label>
+    <label>Link<input class="input" id="projLink" placeholder="github.com/you/repo, vscode://file/C:/path or obsidian://" autocomplete="off" spellcheck="false"></label>
+    <p class="error" id="projError"></p>
+    <div class="actions">
+      <button class="btn primary" id="projSave" value="save">Add project</button>
       <button class="btn quiet" value="cancel" formnovalidate>Cancel</button>
     </div>
   </form>
@@ -888,7 +1094,8 @@ const ICONS = {
   right: '<path d="M9 6l6 6-6 6"/>',
   reset: '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>',
   clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
-  pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>'
+  pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
 };
 const ico = (name) => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
 document.querySelectorAll('[data-ico]').forEach((e) => { e.outerHTML = ico(e.dataset.ico); });
@@ -908,7 +1115,8 @@ const DEFAULT_SETTINGS = {
   units: 'f',
   engine: 'google',
   location: { name: 'Lansdowne, Pennsylvania', lat: 39.9387, lon: -75.2716 },
-  station: 'Lansdowne'
+  station: 'Lansdowne',
+  github: 'jallison1193-crypto'
 };
 const savedSettings = store.get('sp.settings', null);
 let settings = { ...DEFAULT_SETTINGS, ...(savedSettings || {}) };
@@ -927,6 +1135,7 @@ const sky = (() => {
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let specks = [], dust = [], w = 0, h = 0, running = false, raf = 0, last = 0;
   let palette = { ink: '232,238,247', accent: '121,224,212', now: '240,122,147', alpha: 1 };
+  let style = 'dust';   // dust floats up; ash falls while a few embers rise
 
   // Mostly ink, a little accent, a rare touch of the "now" color
   const pick = () => { const t = Math.random(); return t < 0.12 ? 'accent' : t < 0.16 ? 'now' : 'ink'; };
@@ -936,6 +1145,24 @@ const sky = (() => {
     w = innerWidth; h = innerHeight;
     canvas.width = w * dpr; canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (style === 'ash') {
+      specks = [];
+      dust = Array.from({ length: Math.round((w * h) / 7000) }, () => {
+        const z = Math.random() ** 1.4;
+        const ember = Math.random() < 0.06;
+        return {
+          x: Math.random() * w, y: Math.random() * h, z, ember,
+          size: ember ? 0.8 + z * 1.4 : 0.7 + z * 2.4,
+          alpha: ember ? 0.55 + z * 0.4 : 0.14 + z * 0.4,
+          speed: ember ? 6 + z * 10 : 8 + z * 22,
+          dir: ember ? -1 : 1,
+          sway: 10 + Math.random() * 24,
+          phase: Math.random() * Math.PI * 2,
+          color: ember ? 'accent' : 'ink'
+        };
+      });
+      return;
+    }
     // Far layer: tiny specks that never move, for depth
     specks = Array.from({ length: Math.round((w * h) / 4500) }, () => ({
       x: Math.random() * w, y: Math.random() * h,
@@ -948,6 +1175,7 @@ const sky = (() => {
         x: Math.random() * w, y: Math.random() * h, z,
         size: 0.6 + z * 2.2, alpha: 0.25 + z * 0.55,
         speed: 3 + z * 12,                   // pixels per second
+        dir: -1,                             // upwards
         sway: 6 + Math.random() * 14,        // how far it wanders sideways
         phase: Math.random() * Math.PI * 2, color: pick()
       };
@@ -965,7 +1193,7 @@ const sky = (() => {
     for (const d of dust) {
       const x = d.x + Math.sin(secs * 0.15 + d.phase) * d.sway;
       const rgb = palette[d.color];
-      if (d.z > 0.45) {
+      if (d.z > 0.45 || d.ember) {
         ctx.fillStyle = `rgba(${rgb},${d.alpha * 0.12 * k})`;   // a soft halo on the nearest grains
         ctx.beginPath(); ctx.arc(x, d.y, d.size * 3, 0, Math.PI * 2); ctx.fill();
       }
@@ -979,8 +1207,9 @@ const sky = (() => {
     const dt = Math.min((t - last) / 1000, 0.1);
     if (t - last > 33) {                    // about 30 frames a second
       for (const d of dust) {
-        d.y -= d.speed * dt;
+        d.y += d.dir * d.speed * dt;
         if (d.y < -10) { d.y = h + 10; d.x = Math.random() * w; }
+        else if (d.y > h + 10) { d.y = -10; d.x = Math.random() * w; }
       }
       draw(t);
       last = t;
@@ -992,6 +1221,7 @@ const sky = (() => {
   addEventListener('resize', () => { seed(); draw(performance.now()); });
   return {
     setPalette(p) { palette = p; draw(performance.now()); },
+    setStyle(s) { if (s !== style) { style = s; seed(); draw(performance.now()); } },
     setEnabled(on) {
       canvas.hidden = !on;
       if (!on) { running = false; cancelAnimationFrame(raf); return; }
@@ -1001,9 +1231,112 @@ const sky = (() => {
   };
 })();
 
+// ---------- Fractal background (WebGL) ----------
+// A Julia set whose seed point slowly travels, coloured by "orbit traps": how close each
+// point's path passes a ring and a line. That gives the glowing filaments.
+const FX_VERT = 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }';
+const FX_FRAG = `precision highp float;
+uniform vec2 res; uniform float t; uniform vec3 a; uniform vec3 b; uniform vec3 bg; uniform float light;
+vec3 iri(float x) { return 0.5 + 0.5 * cos(6.28318 * (x + vec3(0.0, 0.33, 0.67))); }
+void main() {
+  vec2 q = (gl_FragCoord.xy - 0.5 * res) / min(res.x, res.y);
+  float r = t * 0.015;
+  vec2 uv = mat2(cos(r), -sin(r), sin(r), cos(r)) * q * (2.3 + 0.25 * sin(t * 0.021))
+          + vec2(0.18 * sin(t * 0.011), 0.12 * cos(t * 0.013));
+  float ang = 2.2 + 0.9 * sin(t * 0.017);
+  vec2 c = 0.7885 * vec2(cos(ang), sin(ang));
+  vec2 z = uv;
+  float n = 0.0, ring = 1e3, line = 1e3;
+  for (int i = 0; i < 110; i++) {
+    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+    ring = min(ring, abs(length(z) - 0.55));
+    line = min(line, abs(z.x * 0.6 + z.y));
+    if (dot(z, z) > 64.0) break;
+    n += 1.0;
+  }
+  float s = n >= 110.0 ? 0.0 : clamp((n - log2(log2(dot(z, z)))) / 110.0, 0.0, 1.0);
+  float f1 = exp(-ring * 18.0), f2 = exp(-line * 26.0), glow = pow(s, 0.7);
+  vec3 hue = mix(a, iri(s * 2.0 + ring * 3.0 + t * 0.01), 0.35);
+  float vig = smoothstep(1.25, 0.25, length(q));
+  vec3 tint = (hue * f1 + b * f2 * 0.8 + a * glow * 0.5) * vig;
+  float k = (f1 * 0.9 + f2 * 0.45 + glow * 0.55) * vig;
+  vec3 col = light > 0.5 ? bg - (1.0 - hue) * k * 0.5 : bg + tint;
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`;
+const fx = (() => {
+  const canvas = $('fx');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const born = performance.now() - 90000;          // start partway into the slow morph
+  let gl = null, u = {}, raf = 0, running = false, last = 0;
+  let pal = null;
+  function setup() {
+    gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power' });
+    if (!gl) return false;
+    const shader = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
+    const prog = gl.createProgram();
+    gl.attachShader(prog, shader(gl.VERTEX_SHADER, FX_VERT));
+    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FX_FRAG));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { gl = null; return false; }
+    gl.useProgram(prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);   // one triangle covers the screen
+    const loc = gl.getAttribLocation(prog, 'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    for (const n of ['res', 't', 'a', 'b', 'bg', 'light']) u[n] = gl.getUniformLocation(prog, n);
+    return true;
+  }
+  // Render at half resolution: the glass panes blur it anyway, and it keeps the laptop cool
+  function size() {
+    const k = Math.min(window.devicePixelRatio || 1, 2) * 0.5;
+    canvas.width = Math.round(innerWidth * k); canvas.height = Math.round(innerHeight * k);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  function draw(now) {
+    gl.uniform2f(u.res, canvas.width, canvas.height);
+    gl.uniform1f(u.t, (now - born) / 1000);
+    gl.uniform3fv(u.a, pal.a); gl.uniform3fv(u.b, pal.b); gl.uniform3fv(u.bg, pal.bg);
+    gl.uniform1f(u.light, pal.light);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  function loop(now) {
+    if (!running) return;
+    if (now - last > 40) { draw(now); last = now; }
+    raf = requestAnimationFrame(loop);
+  }
+  addEventListener('resize', () => { if (gl && !canvas.hidden) { size(); draw(performance.now()); } });
+  return {
+    // Returns false when WebGL isn't available, so the page can fall back to dust
+    set(active, moving, palette) {
+      canvas.hidden = !active;
+      if (!active) { running = false; cancelAnimationFrame(raf); return false; }
+      if (!gl && !setup()) { canvas.hidden = true; return false; }
+      pal = palette; size(); draw(performance.now());
+      if (moving && !still) { if (!running) { running = true; raf = requestAnimationFrame(loop); } }
+      else { running = false; cancelAnimationFrame(raf); }
+      return true;
+    }
+  };
+})();
+
 // ---------- Theme ----------
+// Theme sets change type, widget shapes and the background, not just colours
+const SETS = {
+  space:    { name: 'Deep space', accent: 'teal' },
+  nebula:   { name: 'Nebula', accent: 'violet' },
+  aurora:   { name: 'Aurora', accent: 'green' },
+  lunar:    { name: 'Lunar', accent: 'silver' },
+  paper:    { name: 'Paper', accent: 'cobalt', bg: 'none' },
+  fractal:  { name: 'Fractal', accent: 'violet', bg: 'fractal' },
+  phosphor: { name: 'Phosphor', accent: 'amber', bg: 'none' },
+  ashfall:  { name: 'Ashfall', accent: 'ember', bg: 'ash' }
+};
+const rgbList = (s) => s.split(',').map((v) => Number(v) / 255);
 function applyTheme(animate) {
   const root = document.documentElement;
+  if (!SETS[settings.set]) settings.set = 'space';
+  loadSetFonts(settings.set);
   const theme = pickTheme(settings, wxData());
   root.dataset.accent = settings.accent;
   root.dataset.set = settings.set;
@@ -1012,12 +1345,20 @@ function applyTheme(animate) {
     root.dataset.theme = theme;
   }
   const cs = getComputedStyle(root);
+  const accent = cs.getPropertyValue('--accent-rgb').trim(), now = cs.getPropertyValue('--now-rgb').trim();
   sky.setPalette({
-    ink: cs.getPropertyValue('--ink-rgb').trim(),
-    accent: cs.getPropertyValue('--accent-rgb').trim(),
-    now: cs.getPropertyValue('--now-rgb').trim(),
+    ink: cs.getPropertyValue('--ink-rgb').trim(), accent, now,
     alpha: parseFloat(cs.getPropertyValue('--dust-alpha')) || 1
   });
+  const bg = SETS[settings.set].bg || 'dust';
+  const light = theme === 'light';
+  const fractal = bg === 'fractal' && fx.set(true, settings.dust, {
+    a: rgbList(accent), b: rgbList(now), light: light ? 1 : 0,
+    bg: light ? [0.957, 0.949, 0.98] : [0.016, 0.012, 0.04]
+  });
+  if (bg !== 'fractal') fx.set(false);
+  sky.setStyle(bg === 'ash' ? 'ash' : 'dust');
+  sky.setEnabled(settings.dust && (bg === 'dust' || bg === 'ash' || (bg === 'fractal' && !fractal)));
 }
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => applyTheme(true));
 
@@ -1230,6 +1571,69 @@ const focusLeft = () => (focus.endsAt ? Math.max(0, focus.endsAt - Date.now()) :
 const mmss = (ms) => { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 60)}:${pad(s % 60)}`; };
 let shownMonth = new Date(); shownMonth.setDate(1);
 
+// ---------- Projects, with activity from GitHub's public API (no sign-in) ----------
+const DEFAULT_PROJECTS = [
+  { id: uid(), name: 'Start page', next: 'Try the new theme sets', status: 'active', progress: '', repo: 'start-page', link: '' },
+  { id: uid(), name: 'JS and TS course', next: 'Pick up at the next topic', status: 'active', progress: '', repo: '', link: '' },
+  { id: uid(), name: 'Fragrance app', next: 'Choose the model that writes listings', status: 'idea', progress: '', repo: '', link: '' },
+  { id: uid(), name: 'Tesla Roadster model', next: '', status: 'active', progress: '', repo: '', link: '' },
+  { id: uid(), name: 'Vault and MCP server', next: '', status: 'active', progress: '', repo: 'vault', link: '' },
+  { id: uid(), name: 'Windhawk mods', next: '', status: 'active', progress: '', repo: 'windhawk-mods', link: '' }
+];
+const STATUS = {
+  active: { label: 'Active', c: 'var(--accent)' },
+  paused: { label: 'Paused', c: 'var(--faint)' },
+  idea:   { label: 'Idea', c: 'var(--now)' },
+  done:   { label: 'Done', c: 'var(--dim)' }
+};
+let projects = store.get('sp.projects', null) || structuredClone(DEFAULT_PROJECTS);
+let projEditing = false, editingProjId = null;
+const saveProjects = () => store.set('sp.projects', projects);
+
+let gh = store.get('sp.gh', null);   // { user, at, repos: { name: { pushed, url } }, days: [30 commit counts] }
+let ghError = '';
+const ghData = () => (gh && gh.user === settings.github.trim() ? gh : null);
+function ago(iso) {
+  const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 60) return `${Math.max(1, m)} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.round(h / 24);
+  return d < 30 ? `${d}d ago` : new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+async function loadGitHub(force) {
+  const user = settings.github.trim();
+  if (!isOn('projects') || document.hidden || !user) return;
+  if (!force && ghData() && Date.now() - gh.at < 10 * 60e3) return;
+  try {
+    const base = `https://api.github.com/users/${encodeURIComponent(user)}`;
+    const [reposRes, eventsRes] = await Promise.all([fetch(`${base}/repos?sort=pushed&per_page=100`), fetch(`${base}/events/public?per_page=100`)]);
+    if (reposRes.status === 404) throw new Error('user');
+    if (!reposRes.ok) throw new Error(reposRes.status === 403 || reposRes.status === 429 ? 'limit' : 'network');
+    const repos = {};
+    for (const r of await reposRes.json()) repos[r.name.toLowerCase()] = { pushed: r.pushed_at, url: r.html_url };
+    // Commits per day for the last 30 days, from public push events
+    const days = new Array(30).fill(0);
+    if (eventsRes.ok) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      for (const ev of await eventsRes.json()) {
+        if (ev.type !== 'PushEvent') continue;
+        const day = new Date(ev.created_at); day.setHours(0, 0, 0, 0);
+        const i = 29 - Math.round((today - day) / 864e5);
+        if (i >= 0 && i < 30) days[i] += ev.payload?.size || ev.payload?.commits?.length || 1;
+      }
+    }
+    gh = { user, at: Date.now(), repos, days };
+    store.set('sp.gh', gh);
+    ghError = '';
+  } catch (e) {
+    ghError = e.message === 'user' ? `GitHub has no user named “${user}”. Check the name in Settings.`
+      : e.message === 'limit' ? 'GitHub limits how often this refreshes. It will try again in a few minutes.'
+      : 'GitHub isn’t responding. Repository details will come back when it does.';
+  }
+  refresh('projects');
+}
+
 // ---------- Widgets ----------
 const SIZES = { s: 'Small', m: 'Medium', l: 'Large', w: 'Wide' };
 const WIDGETS = {
@@ -1239,6 +1643,7 @@ const WIDGETS = {
   sky:      { name: 'Sky', blurb: 'Moon phase, sunrise, sunset and daylight left', sizes: ['s', 'm', 'l'], render: renderSky },
   transit:  { name: 'Trains', blurb: 'Live SEPTA Regional Rail departures', sizes: ['m', 'l'], render: renderTransit },
   sites:    { name: 'Sites', blurb: 'Your links, in groups', sizes: ['m', 'l', 'w'], render: renderSites },
+  projects: { name: 'Projects', blurb: 'What you’re building, with GitHub activity', sizes: ['m', 'l', 'w'], render: renderProjects },
   calendar: { name: 'Calendar', blurb: 'Today, or the whole month', sizes: ['s', 'l'], render: renderCalendar },
   notes:    { name: 'Quick note', blurb: 'A scratchpad that saves as you type', sizes: ['s', 'm', 'l'], render: renderNotes },
   tasks:    { name: 'Tasks', blurb: 'A short to-do list', sizes: ['s', 'm', 'l'], render: renderTasks },
@@ -1251,14 +1656,15 @@ const DEFAULT_LAYOUT = [
   { id: 'search', size: 'm', on: true },
   { id: 'transit', size: 'm', on: true },
   { id: 'sites', size: 'm', on: true },
-  { id: 'calendar', size: 'l', on: true },
   { id: 'notes', size: 'm', on: true },
+  { id: 'calendar', size: 'l', on: true },
+  { id: 'projects', size: 'l', on: true },
   { id: 'tasks', size: 'm', on: false },
   { id: 'focus', size: 's', on: false }
 ];
 function normalizeLayout(list) {
   const out = (Array.isArray(list) ? list : []).filter((w) => WIDGETS[w.id]);
-  for (const d of DEFAULT_LAYOUT) if (!out.some((w) => w.id === d.id)) out.push({ ...d, on: false });
+  for (const d of DEFAULT_LAYOUT) if (!out.some((w) => w.id === d.id)) out.push({ ...d });   // widgets added since the layout was saved
   for (const w of out) if (!WIDGETS[w.id].sizes.includes(w.size)) w.size = WIDGETS[w.id].sizes[0];
   return out;
 }
@@ -1290,12 +1696,14 @@ const ENGINES = {
 };
 // BrowserOS's built-in Scheduled Tasks page (part of its AI extension)
 const BROWSEROS_TASKS = 'chrome-extension://bflpfmnmnokmjhmgnolecpppdbdophmk/app.html#/scheduled';
+// The Phosphor theme shows search as a shell prompt, like josh@lansdowne:~$
+const promptText = () => `${(settings.name.trim() || 'you').toLowerCase().replace(/\s+/g, '')}@${shortPlace().toLowerCase().replace(/\s+/g, '-')}:~$`;
 function renderSearch(b) {
   if (!ENGINES[settings.engine]) settings.engine = 'google';
   b.innerHTML = `<form class="search" role="search">
     <div class="engines">${Object.entries(ENGINES).map(([k, e]) => `<button type="button" data-engine="${k}" aria-pressed="${k === settings.engine}">${e.label}</button>`).join('')}
       <button class="os-link" type="button" title="Copy the address of BrowserOS scheduled tasks">${ico('clock')}BrowserOS tasks</button></div>
-    <label class="field-search">${ico('search')}<input type="search" name="q" autocomplete="off" aria-label="Search" placeholder="${ENGINES[settings.engine].hint}"><kbd title="Press / anywhere to search">/</kbd></label>
+    <label class="field-search">${ico('search')}<span class="prompt">${esc(promptText())}</span><input type="search" name="q" autocomplete="off" aria-label="Search" placeholder="${ENGINES[settings.engine].hint}"><kbd title="Press / anywhere to search">/</kbd></label>
   </form>`;
   const form = b.querySelector('form');
   const input = form.querySelector('input');
@@ -1303,7 +1711,12 @@ function renderSearch(b) {
     const btn = e.target.closest('button');
     if (!btn) return;
     if (btn.classList.contains('os-link')) {
-      // BrowserOS won't let a website open its own pages, but typing the address works
+      // With the Start page helper extension installed, it opens the page for us
+      if (document.documentElement.dataset.browserosHelper) {
+        window.postMessage({ type: 'start-page:open', route: 'scheduled' }, location.origin);
+        return;
+      }
+      // Without it: BrowserOS won't let a website open its own pages, but typing the address works
       toast(copyText(BROWSEROS_TASKS)
         ? 'Address copied. Press Ctrl+L, then Ctrl+V and Enter. Bookmark the page for one-click access.'
         : 'Copying didn’t work here. Open a new tab with Ctrl+T and pick Scheduled Tasks.');
@@ -1459,6 +1872,10 @@ function renderSites(b) {
   };
   if (sitesEditing) { addButton('New group', newGroup); addButton('Rename', renameGroup); addButton('Delete', deleteGroup); }
   addButton(sitesEditing ? 'Done' : 'Edit', () => { sitesEditing = !sitesEditing; refresh('sites'); }, sitesEditing ? 'mini on' : 'mini');
+  addButton('', () => openSiteDialog(null), 'mini ic');
+  act.lastChild.innerHTML = ico('plus');
+  act.lastChild.setAttribute('aria-label', 'Add a site');
+  act.lastChild.title = 'Add a site';
 
   for (const site of group.sites) {
     const li = document.createElement('li');
@@ -1569,20 +1986,35 @@ function renderNotes(b) {
   });
 }
 
+let taskAdding = false;   // the add field only appears after pressing +
 function renderTasks(b) {
   const left = tasks.filter((t) => !t.done).length;
   b.innerHTML = `<div class="w-head"><h2>Tasks</h2><span class="w-meta">${tasks.length ? `${left} left` : ''}</span>
-      <div class="act">${tasks.some((t) => t.done) ? '<button class="mini" type="button" data-a="clear">Clear done</button>' : ''}</div></div>
-    <form class="task-add"><input class="task-input" maxlength="120" placeholder="Add a task and press Enter" aria-label="Add a task" autocomplete="off"></form>
-    <ul class="task-list">${tasks.map((t) => `<li class="${t.done ? 'done' : ''}" data-id="${t.id}"><label><input type="checkbox" ${t.done ? 'checked' : ''}><span>${esc(t.text)}</span></label><button class="x" type="button" aria-label="Delete task">${ico('x')}</button></li>`).join('')}</ul>`;
-  b.querySelector('form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = e.target.querySelector('input').value.trim();
-    if (!text) return;
-    tasks.push({ id: uid(), text, done: false });
-    saveTasks(); refresh('tasks');
+      <div class="act">${tasks.some((t) => t.done) ? '<button class="mini" type="button" data-a="clear">Clear done</button>' : ''}<button class="mini ic" type="button" data-a="add" aria-label="Add a task" title="Add a task">${ico('plus')}</button></div></div>
+    ${taskAdding ? '<form class="task-add"><input class="task-input" maxlength="120" placeholder="New task, then Enter" aria-label="New task" autocomplete="off"></form>' : ''}
+    <ul class="task-list">${tasks.map((t) => `<li class="${t.done ? 'done' : ''}" data-id="${t.id}"><label><input type="checkbox" ${t.done ? 'checked' : ''}><span>${esc(t.text)}</span></label><button class="x" type="button" aria-label="Delete task">${ico('x')}</button></li>`).join('')}</ul>
+    ${!tasks.length && !taskAdding ? '<button class="proj-add" type="button" data-a="add">Add your first task</button>' : ''}`;
+  b.querySelectorAll('[data-a="add"]').forEach((btn) => btn.addEventListener('click', () => {
+    taskAdding = true; refresh('tasks');
     mounted.tasks?.body.querySelector('.task-input')?.focus();
-  });
+  }));
+  const form = b.querySelector('form');
+  if (form) {
+    const input = form.querySelector('input');
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      tasks.push({ id: uid(), text, done: false });
+      saveTasks(); refresh('tasks');
+      mounted.tasks?.body.querySelector('.task-input')?.focus();   // stay open to add several in a row
+    });
+    // Escape, or leaving the field empty, closes it again
+    input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); taskAdding = false; refresh('tasks'); } });
+    input.addEventListener('blur', () => setTimeout(() => {
+      if (taskAdding && !input.value.trim() && !b.contains(document.activeElement)) { taskAdding = false; refresh('tasks'); }
+    }, 150));
+  }
   b.querySelector('[data-a="clear"]')?.addEventListener('click', () => { tasks = tasks.filter((t) => !t.done); saveTasks(); refresh('tasks'); });
   b.querySelector('.task-list').addEventListener('change', (e) => {
     const task = tasks.find((t) => t.id === e.target.closest('li').dataset.id);
@@ -1635,6 +2067,123 @@ function focusTick() {
   document.querySelectorAll('[data-ring]').forEach((c) => { c.style.strokeDasharray = `${frac.toFixed(4)} 1`; });
   document.title = focus.endsAt ? `${mmss(left)} ${focus.mode === 'focus' ? 'focus' : 'break'} left` : BASE_TITLE;
 }
+
+function renderProjects(b, size) {
+  const data = ghData();
+  const user = settings.github.trim();
+  b.innerHTML = `<div class="w-head"><h2>Projects</h2>${user ? `<a class="w-meta" href="https://github.com/${encodeURIComponent(user)}">${esc(user)}</a>` : ''}<div class="act"></div></div>
+    <ul class="projects${size === 'w' ? ' projects-w' : ''}${projEditing ? ' editing' : ''}"></ul>`;
+  const act = b.querySelector('.act'), list = b.querySelector('.projects');
+  const edit = document.createElement('button');
+  edit.type = 'button'; edit.className = projEditing ? 'mini on' : 'mini'; edit.textContent = projEditing ? 'Done' : 'Edit';
+  edit.addEventListener('click', () => { projEditing = !projEditing; refresh('projects'); });
+  const plus = document.createElement('button');
+  plus.type = 'button'; plus.className = 'mini ic'; plus.innerHTML = ico('plus');
+  plus.setAttribute('aria-label', 'Add a project'); plus.title = 'Add a project';
+  plus.addEventListener('click', () => openProjDialog(null));
+  act.append(edit, plus);
+
+  for (const p of projects) {
+    const repo = (p.repo || '').trim();
+    const key = repo.split('/').pop().toLowerCase();
+    const info = key && data ? data.repos[key] : null;
+    const full = repo.includes('/') ? repo : (repo && user ? `${user}/${repo}` : '');
+    const href = p.link || info?.url || (full ? `https://github.com/${full}` : '');
+    // A repo that isn't in the public list is private (or misspelled); it still links to GitHub
+    const meta = info ? esc(ago(info.pushed)) : (key && data ? `${ico('lock')}Private` : '');
+    const hasBar = p.progress !== '' && p.progress != null;
+    const li = document.createElement('li');
+    li.dataset.id = p.id;
+    li.draggable = projEditing;
+    const row = document.createElement(href && !projEditing ? 'a' : 'div');
+    row.className = 'proj';
+    if (href && !projEditing) row.href = href;
+    row.style.setProperty('--c', (STATUS[p.status] || STATUS.active).c);
+    row.innerHTML = `<span class="dot" title="${(STATUS[p.status] || STATUS.active).label}"></span><span class="pn">${esc(p.name)}</span><span class="pm">${meta}</span>`
+      + (p.next || hasBar ? `<span class="px"><span>${esc(p.next || (STATUS[p.status] || STATUS.active).label)}</span>${hasBar ? `<span class="bar" title="${p.progress}% done"><i style="width:${p.progress}%"></i></span>` : ''}</span>` : '');
+    li.append(row);
+    if (projEditing) {
+      row.addEventListener('click', () => openProjDialog(p));
+      const tools = document.createElement('div');
+      tools.className = 'tools';
+      tools.innerHTML = `<button type="button" aria-label="Edit ${esc(p.name)}">${ico('pencil')}</button><button type="button" class="remove" aria-label="Remove ${esc(p.name)}">${ico('x')}</button>`;
+      tools.children[0].addEventListener('click', (e) => { e.stopPropagation(); openProjDialog(p); });
+      tools.children[1].addEventListener('click', (e) => {
+        e.stopPropagation();
+        const at = projects.indexOf(p);
+        projects = projects.filter((x) => x !== p);
+        saveProjects(); refresh('projects');
+        toast(`Removed ${p.name}.`, { label: 'Undo', run() { projects.splice(at, 0, p); saveProjects(); refresh('projects'); } });
+      });
+      row.append(tools);
+      li.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', p.id); li.classList.add('dragging'); });
+      li.addEventListener('dragend', () => li.classList.remove('dragging'));
+      li.addEventListener('dragover', (e) => e.preventDefault());
+      li.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const from = projects.findIndex((x) => x.id === e.dataTransfer.getData('text/plain'));
+        const to = projects.indexOf(p);
+        if (from < 0 || from === to) return;
+        const [moved] = projects.splice(from, 1);
+        projects.splice(to, 0, moved);
+        saveProjects(); refresh('projects');
+      });
+    }
+    list.append(li);
+  }
+  if (!projects.length) {
+    const li = document.createElement('li');
+    li.innerHTML = '<button class="proj-add" type="button">Add your first project</button>';
+    li.firstChild.addEventListener('click', () => openProjDialog(null));
+    list.append(li);
+  }
+
+  if (ghError && size !== 'm') b.insertAdjacentHTML('beforeend', `<p class="note" style="margin-top:8px">${esc(ghError)}</p>`);
+  else if (size === 'l' && data) {
+    const max = Math.max(1, ...data.days);
+    const total = data.days.reduce((a, v) => a + v, 0);
+    b.insertAdjacentHTML('beforeend', `<div class="gh-act"><div class="bars" role="img" aria-label="${total} commits to public repositories in the last 30 days">${data.days.map((v) => `<i class="${v ? '' : 'zero'}" style="height:${v ? 20 + (80 * v) / max : 6}%" title="${v} commit${v === 1 ? '' : 's'}"></i>`).join('')}</div>
+      <span class="w-meta">${total} commit${total === 1 ? '' : 's'} to public repositories in the last 30 days</span></div>`);
+  }
+}
+
+function normalizeLink(raw) {
+  if (/^(vscode|obsidian):\/\/\S+$/i.test(raw)) return raw;   // open a folder in VS Code or a note in Obsidian
+  return normalizeUrl(raw);
+}
+function openProjDialog(p) {
+  editingProjId = p ? p.id : null;
+  $('projDialogTitle').textContent = p ? 'Edit project' : 'Add a project';
+  $('projSave').textContent = p ? 'Save changes' : 'Add project';
+  $('projName').value = p ? p.name : '';
+  $('projNext').value = p ? p.next : '';
+  $('projStatus').value = p ? p.status : 'active';
+  $('projProgress').value = p && p.progress !== '' ? String(p.progress) : '';
+  $('projRepo').value = p ? p.repo : '';
+  $('projLink').value = p ? p.link : '';
+  $('projError').textContent = '';
+  $('projDialog').showModal();
+}
+$('projForm').addEventListener('submit', (e) => {
+  if (e.submitter?.value !== 'save') return;
+  const name = $('projName').value.trim();
+  if (!name) { e.preventDefault(); $('projError').textContent = 'Give the project a name.'; return; }
+  let link = $('projLink').value.trim();
+  if (link) {
+    link = normalizeLink(link);
+    if (!link) { e.preventDefault(); $('projError').textContent = 'That link doesn’t look right. Use a web address, or one starting with vscode:// or obsidian://.'; return; }
+  }
+  const fields = {
+    name, link,
+    next: $('projNext').value.trim(),
+    status: $('projStatus').value,
+    progress: $('projProgress').value,
+    repo: $('projRepo').value.trim().replace(/^https?:\/\/github\.com\//i, '').replace(/\/+$/, '')
+  };
+  if (editingProjId) Object.assign(projects.find((x) => x.id === editingProjId), fields);
+  else projects.push({ id: uid(), ...fields });
+  saveProjects(); refresh('projects');
+});
 
 // ---------- Board: build, arrange, drag ----------
 let arranging = false;
@@ -1935,6 +2484,10 @@ function syncSettingsForm() {
   setRadio('schedule', settings.schedule);
   setRadio('accent', settings.accent);
   setRadio('units', settings.units);
+  const only = SET_ONLY[settings.set];
+  $('modeHint').hidden = !only;
+  $('modeHint').textContent = only ? `${SETS[settings.set].name} is ${only} only, so it stays ${only} whatever you pick here.` : '';
+  if (document.activeElement !== $('ghUser')) $('ghUser').value = settings.github;
   $('schedBox').hidden = settings.theme !== 'schedule';
   $('schedTimes').hidden = settings.schedule !== 'times';
   $('lightAt').value = settings.lightAt;
@@ -1965,6 +2518,7 @@ function renderWidgetList() {
       li.className = item.on ? '' : 'off';
       saveLayout(); renderBoard();
       if (item.on && item.id === 'transit') loadTransit();
+      if (item.on && item.id === 'projects') loadGitHub();
     });
     ul.append(li);
   }
@@ -1972,18 +2526,23 @@ function renderWidgetList() {
 
 const onRadio = (name, fn) => document.querySelectorAll(`input[name="${name}"]`).forEach((r) => r.addEventListener('change', () => { if (r.checked) fn(r.value); }));
 // Each theme set brings its own accent; you can still pick a different one afterwards
-const SET_ACCENT = { space: 'teal', nebula: 'violet', aurora: 'green', lunar: 'silver' };
-onRadio('set', (v) => { settings.set = v; settings.accent = SET_ACCENT[v]; saveSettings(); syncSettingsForm(); applyTheme(true); });
+onRadio('set', (v) => { settings.set = v; settings.accent = SETS[v].accent; saveSettings(); syncSettingsForm(); applyTheme(true); refresh('search'); });
 onRadio('theme', (v) => { settings.theme = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
 onRadio('schedule', (v) => { settings.schedule = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
 onRadio('accent', (v) => { settings.accent = v; saveSettings(); applyTheme(false); });
 onRadio('units', (v) => { settings.units = v; saveSettings(); refresh('weather'); refresh('sky'); loadWeather(true); });
 $('lightAt').addEventListener('change', (e) => { if (e.target.value) { settings.lightAt = e.target.value; saveSettings(); syncScheduleHint(); applyTheme(true); } });
 $('darkAt').addEventListener('change', (e) => { if (e.target.value) { settings.darkAt = e.target.value; saveSettings(); syncScheduleHint(); applyTheme(true); } });
-$('dust').addEventListener('change', (e) => { settings.dust = e.target.checked; saveSettings(); sky.setEnabled(settings.dust); });
+$('dust').addEventListener('change', (e) => { settings.dust = e.target.checked; saveSettings(); applyTheme(false); });
+$('ghUser').addEventListener('change', (e) => {
+  settings.github = e.target.value.trim();
+  saveSettings(); ghError = '';
+  refresh('projects'); loadGitHub(true);
+});
 $('use24').addEventListener('change', (e) => { settings.use24 = e.target.checked; saveSettings(); tick(); refresh('weather'); refresh('sky'); refresh('transit'); syncScheduleHint(); });
 $('seconds').addEventListener('change', (e) => { settings.seconds = e.target.checked; saveSettings(); tick(); });
 $('name').addEventListener('input', (e) => { settings.name = e.target.value; saveSettings(); tick(); });
+$('name').addEventListener('change', () => refresh('search'));
 $('station').addEventListener('change', (e) => {
   settings.station = e.target.value.trim() || 'Lansdowne';
   saveSettings();
@@ -1994,7 +2553,7 @@ $('resetLayout').addEventListener('click', async () => {
   const yes = await ask({ title: 'Reset the layout?', text: 'Widgets go back to their original places and sizes. Your sites, notes and tasks stay.', ok: 'Reset layout', danger: true });
   if (!yes) return;
   layout = normalizeLayout(structuredClone(DEFAULT_LAYOUT));
-  saveLayout(); renderBoard(); renderWidgetList(); loadTransit();
+  saveLayout(); renderBoard(); renderWidgetList(); loadTransit(); loadGitHub();
 });
 
 // Location: search by city name (Open-Meteo geocoding) or ask the browser
@@ -2047,7 +2606,7 @@ $('locHere').addEventListener('click', () => {
 
 // Backup and restore everything in one file
 $('backupAll').addEventListener('click', () => {
-  const data = { app: 'start-page', version: 2, settings, layout, sites, notes: store.get('sp.notes', ''), tasks };
+  const data = { app: 'start-page', version: 3, settings, layout, sites, projects, notes: store.get('sp.notes', ''), tasks };
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = 'start-page-backup.json';
@@ -2068,11 +2627,12 @@ $('restoreFile').addEventListener('change', async (e) => {
       layout = normalizeLayout(parsed.layout);
       if (parsed.sites?.groups) sites = parsed.sites;
       tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+      if (Array.isArray(parsed.projects)) projects = parsed.projects;
       store.set('sp.notes', parsed.notes || '');
     } else throw new Error('not a backup');
-    saveSettings(); saveLayout(); saveSites(); saveTasks();
-    applyTheme(true); sky.setEnabled(settings.dust); renderBoard(); syncSettingsForm();
-    loadWeather(true); loadTransit();
+    saveSettings(); saveLayout(); saveSites(); saveTasks(); saveProjects();
+    applyTheme(true); renderBoard(); syncSettingsForm();
+    loadWeather(true); loadTransit(); loadGitHub(true);
     toast('Restored from backup.');
   } catch {
     toast('That file isn’t a start page backup. Pick a start-page-backup.json file.');
@@ -2115,17 +2675,17 @@ addEventListener('storage', (e) => {
   if (e.key === 'sp.tasks') { tasks = store.get('sp.tasks', []); refresh('tasks'); }
   if (e.key === 'sp.focus') { focus = store.get('sp.focus', focus); refresh('focus'); }
   if (e.key === 'np.sites') { sites = store.get('np.sites', sites); refresh('sites'); }
+  if (e.key === 'sp.projects') { projects = store.get('sp.projects', projects); refresh('projects'); }
   if (e.key === 'sp.settings' || e.key === 'sp.layout') {
     settings = { ...DEFAULT_SETTINGS, ...store.get('sp.settings', {}) };
     layout = normalizeLayout(store.get('sp.layout', layout));
-    applyTheme(true); sky.setEnabled(settings.dust); renderBoard(); syncSettingsForm();
+    applyTheme(true); renderBoard(); syncSettingsForm();
   }
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadWeather(); loadTransit(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadWeather(); loadTransit(); loadGitHub(); } });
 
 // ---------- Start ----------
 applyTheme(false);
-sky.setEnabled(settings.dust);
 renderBoard();
 syncSettingsForm();
 tick();
@@ -2134,6 +2694,8 @@ loadWeather();
 setInterval(loadWeather, 5 * 60e3);
 loadTransit();
 setInterval(loadTransit, 60e3);
+loadGitHub();
+setInterval(loadGitHub, 5 * 60e3);
 </script>
 </body>
 </html>
