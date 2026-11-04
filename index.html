@@ -1,0 +1,900 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Night Sky Start</title>
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #000000;
+    --starlight: #E8EEF7;
+    --dust: #8792A8;
+    --faint: #4A5468;
+    --line: #18202E;
+    --oiii: #79E0D4;
+    --halpha: #F07A93;
+    --veil: rgba(4, 7, 13, 0.78);
+    --display: "Outfit", system-ui, sans-serif;
+    --text: "Instrument Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--void); color: var(--starlight); }
+  body {
+    font-family: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { -webkit-appearance: none; appearance: none; }
+  :focus-visible { outline: 2px solid var(--oiii); outline-offset: 3px; border-radius: 6px; }
+
+  /* The sky sits behind everything */
+  #sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+
+  .shell {
+    position: relative;
+    z-index: 1;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: clamp(24px, 5vw, 64px) clamp(16px, 5vw, 64px) 48px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-areas:
+      "hero   cal"
+      "search cal"
+      "sites  cal";
+    grid-template-rows: auto auto 1fr;
+    column-gap: clamp(32px, 5vw, 80px);
+    row-gap: 32px;
+  }
+
+  /* ---------- Clock ---------- */
+  .hero { grid-area: hero; }
+  .time {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.12em;
+    font-family: var(--display);
+    font-weight: 100;
+    font-size: clamp(5rem, 12vw, 10.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 48px rgba(121, 224, 212, 0.22), 0 0 2px rgba(232, 238, 247, 0.55);
+    cursor: pointer;
+    user-select: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0 0 20px -0.04em;
+  }
+  .time .sub {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1em;
+    font-size: 0.22em;
+    font-weight: 200;
+    line-height: 1;
+    letter-spacing: 0;
+    padding-top: 0.38em;
+    color: var(--dust);
+    text-shadow: none;
+  }
+  .time .sec { color: var(--halpha); }
+  .greet { margin: 0; font-size: 1.25rem; font-weight: 500; }
+  .greet .date { color: var(--dust); font-weight: 400; }
+  .weather { margin: 4px 0 0; color: var(--dust); min-height: 1.5em; }
+
+  /* ---------- Search ---------- */
+  .search { grid-area: search; max-width: 640px; }
+  .engines { display: flex; gap: 4px; margin-bottom: 10px; }
+  .engines button {
+    background: none;
+    border: 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: var(--dust);
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+  .engines button:hover { color: var(--starlight); }
+  .engines button[aria-pressed="true"] { color: var(--void); background: var(--oiii); font-weight: 500; }
+  .search input {
+    width: 100%;
+    padding: 14px 18px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(10, 14, 22, 0.7);
+    backdrop-filter: blur(6px);
+    font-size: 1.05rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search input::placeholder { color: var(--faint); }
+  .search input:focus { border-color: var(--oiii); }
+
+  /* ---------- Sites ---------- */
+  .sites { grid-area: sites; }
+  .sites-bar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab {
+    background: none;
+    border: 0;
+    padding: 6px 12px;
+    font-size: 1rem;
+    color: var(--dust);
+    cursor: pointer;
+    border-radius: 8px;
+    position: relative;
+  }
+  .tab:hover { color: var(--starlight); }
+  .tab[aria-selected="true"] { color: var(--starlight); }
+  .tab[aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    left: 12px; right: 12px; bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--oiii);
+  }
+  .tab.drop-target { color: var(--oiii); }
+  .bar-actions { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+  .quiet {
+    background: none;
+    border: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: var(--dust);
+    cursor: pointer;
+    font-size: 0.875rem;
+  }
+  .quiet:hover { color: var(--starlight); background: rgba(232, 238, 247, 0.06); }
+  .quiet.on { color: var(--oiii); }
+  .edit-only { display: none; }
+  .editing .edit-only { display: inline-flex; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .site { position: relative; }
+  .site a, .site .add {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 8px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--starlight);
+    font-size: 0.875rem;
+    text-align: center;
+    transition: background 0.15s;
+  }
+  .site a:hover { background: rgba(121, 224, 212, 0.07); }
+  .site a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: rgba(232, 238, 247, 0.06);
+    overflow: hidden;
+  }
+  .icon img { width: 26px; height: 26px; }
+  .icon b { font-weight: 600; color: var(--oiii); font-size: 1.1rem; }
+  .site .tools {
+    position: absolute; top: 4px; right: 4px;
+    display: none; gap: 2px;
+  }
+  .editing .site .tools { display: flex; }
+  .editing .site a { cursor: grab; outline: 1px dashed var(--line); outline-offset: -1px; }
+  .site .tools button {
+    width: 26px; height: 26px;
+    border: 0; border-radius: 7px;
+    background: var(--veil);
+    color: var(--dust);
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+  .site .tools button:hover { color: var(--starlight); }
+  .site .tools button.remove:hover { color: var(--halpha); }
+  .site.dragging { opacity: 0.35; }
+  .site .add {
+    width: 100%;
+    background: none;
+    border: 1px dashed var(--faint);
+    color: var(--dust);
+    cursor: pointer;
+  }
+  .site .add:hover { color: var(--oiii); border-color: var(--oiii); }
+  .add .icon { background: none; font-size: 1.6rem; font-weight: 300; }
+  .empty { color: var(--dust); margin: 8px 0; }
+
+  /* ---------- Calendar column ---------- */
+  .cal {
+    grid-area: cal;
+    border-left: 1px solid var(--line);
+    padding-left: clamp(24px, 3vw, 40px);
+    align-self: start;
+  }
+  .month-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .month-head h2 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 200;
+    font-size: 2rem;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .month-head h2 small { font-size: 0.55em; color: var(--dust); margin-left: 6px; }
+  .month-nav { display: flex; gap: 2px; }
+  .month-nav button { font-size: 1.1rem; padding: 4px 10px; }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .days .dow { color: var(--faint); font-size: 0.75rem; padding-bottom: 6px; }
+  .days a {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    margin: 0 auto;
+    border-radius: 50%;
+    text-decoration: none;
+    color: var(--starlight);
+    font-size: 0.9rem;
+  }
+  .days a:hover { background: rgba(121, 224, 212, 0.1); }
+  .days a.out { color: var(--faint); }
+  .days a.today { background: var(--halpha); color: var(--void); font-weight: 600; }
+
+  .agenda { margin-top: 28px; }
+  .agenda-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .agenda-head h3 { margin: 0; font-size: 1rem; font-weight: 500; }
+  .gcal-frame {
+    width: 100%;
+    height: 380px;
+    border: 0;
+    border-radius: 12px;
+    /* Google's embed only comes in light colors, so invert it into the night palette */
+    filter: invert(0.92) hue-rotate(180deg) saturate(0.8) contrast(0.95);
+    background: #fff;
+  }
+  .gcal-setup { color: var(--dust); }
+  .gcal-setup p { margin: 0 0 12px; }
+  .gcal-setup button {
+    background: var(--oiii); color: var(--void);
+    border: 0; border-radius: 999px;
+    padding: 8px 16px; font-weight: 500; cursor: pointer;
+  }
+
+  /* ---------- Dialogs ---------- */
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #070A11;
+    color: var(--starlight);
+    padding: 24px;
+    width: min(420px, calc(100vw - 32px));
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); }
+  dialog h2 { margin: 0 0 16px; font-size: 1.15rem; font-weight: 600; }
+  dialog label { display: block; font-size: 0.875rem; color: var(--dust); margin-bottom: 14px; }
+  dialog input, dialog select {
+    display: block;
+    width: 100%;
+    margin-top: 6px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #000;
+    outline: none;
+  }
+  dialog input:focus, dialog select:focus { border-color: var(--oiii); }
+  dialog .hint { font-size: 0.8rem; color: var(--faint); margin: -6px 0 14px; }
+  dialog .error { color: var(--halpha); font-size: 0.85rem; min-height: 1.2em; margin: -4px 0 10px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .primary {
+    background: var(--oiii); color: var(--void);
+    border: 0; border-radius: 999px;
+    padding: 8px 18px; font-weight: 500; cursor: pointer;
+  }
+
+  /* ---------- Small screens ---------- */
+  @media (max-width: 900px) {
+    .shell {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "hero" "search" "sites" "cal";
+    }
+    .cal { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 28px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<main class="shell">
+  <header class="hero">
+    <button class="time" id="clock" title="Switch between 12 and 24 hour">
+      <span id="hm">--:--</span>
+      <span class="sub"><span class="sec" id="sec">--</span><span id="ampm"></span></span>
+    </button>
+    <p class="greet"><span id="greeting">Hello, Josh.</span> <span class="date" id="date"></span></p>
+    <p class="weather" id="weather"></p>
+  </header>
+
+  <form class="search" id="search" role="search">
+    <div class="engines" id="engines">
+      <button type="button" data-engine="google">Google</button>
+      <button type="button" data-engine="chatgpt">ChatGPT</button>
+      <button type="button" data-engine="claude">Claude</button>
+    </div>
+    <input id="query" type="search" autocomplete="off" placeholder="Search the web" aria-label="Search">
+  </form>
+
+  <section class="sites" id="sites" aria-label="Your sites">
+    <div class="sites-bar">
+      <div role="tablist" id="tabs" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+      <div class="bar-actions">
+        <button class="quiet edit-only" id="newGroup" type="button">New group</button>
+        <button class="quiet edit-only" id="renameGroup" type="button">Rename group</button>
+        <button class="quiet edit-only" id="deleteGroup" type="button">Delete group</button>
+        <button class="quiet edit-only" id="backup" type="button">Back up</button>
+        <button class="quiet edit-only" id="restore" type="button">Restore</button>
+        <button class="quiet" id="editToggle" type="button" aria-pressed="false">Edit sites</button>
+      </div>
+    </div>
+    <ul class="grid" id="grid"></ul>
+    <input type="file" id="restoreFile" accept="application/json" hidden>
+  </section>
+
+  <aside class="cal" aria-label="Calendar">
+    <div class="month-head">
+      <h2 id="monthTitle"></h2>
+      <div class="month-nav">
+        <button class="quiet" id="prevMonth" type="button" aria-label="Previous month">&lsaquo;</button>
+        <button class="quiet" id="thisMonth" type="button">Today</button>
+        <button class="quiet" id="nextMonth" type="button" aria-label="Next month">&rsaquo;</button>
+      </div>
+    </div>
+    <div class="days" id="days"></div>
+
+    <div class="agenda">
+      <div class="agenda-head">
+        <h3>Coming up</h3>
+        <button class="quiet" id="gcalChange" type="button" hidden>Change calendar</button>
+      </div>
+      <div id="gcalSlot"></div>
+    </div>
+  </aside>
+</main>
+
+<dialog id="siteDialog">
+  <form method="dialog" id="siteForm">
+    <h2 id="siteDialogTitle">Add a site</h2>
+    <label>Name<input id="siteName" required maxlength="40" placeholder="YouTube"></label>
+    <label>Address<input id="siteUrl" required placeholder="youtube.com"></label>
+    <label>Group<select id="siteGroup"></select></label>
+    <p class="error" id="siteError"></p>
+    <div class="dialog-actions">
+      <button class="quiet" value="cancel" formnovalidate>Cancel</button>
+      <button class="primary" id="siteSave" value="save">Add site</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="gcalDialog">
+  <form method="dialog" id="gcalForm">
+    <h2>Show your Google Calendar</h2>
+    <label>Calendar address or embed link<input id="gcalInput" placeholder="you@gmail.com"></label>
+    <p class="hint">Your Gmail address works for your main calendar. For another calendar, open Google Calendar, go to its settings, and copy the link from "Embed code".</p>
+    <p class="error" id="gcalError"></p>
+    <div class="dialog-actions">
+      <button class="quiet" value="cancel" formnovalidate>Cancel</button>
+      <button class="primary" value="save">Show calendar</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+// ---------- Storage helpers (fail quietly in private windows) ----------
+const store = {
+  get(key, fallback) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  }
+};
+const $ = (id) => document.getElementById(id);
+const uid = () => Math.random().toString(36).slice(2, 9);
+
+// ---------- Drifting dust sky ----------
+(function sky() {
+  const canvas = $('sky');
+  const ctx = canvas.getContext('2d');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let specks = [], dust = [], w, h, dpr;
+
+  // Mostly starlight, a little teal, a rare touch of rose
+  const pickColor = () => {
+    const t = Math.random();
+    return t < 0.12 ? '121,224,212' : t < 0.16 ? '240,122,147' : '232,238,247';
+  };
+
+  function seed() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = innerWidth; h = innerHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Far layer: tiny specks that never move, for depth
+    specks = Array.from({ length: Math.round((w * h) / 4500) }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      size: 0.3 + Math.random() * 0.6,
+      alpha: 0.12 + Math.random() * 0.25
+    }));
+
+    // Near layer: dust that floats up slowly; closer grains (higher z) are bigger, softer and faster
+    dust = Array.from({ length: Math.round((w * h) / 9000) }, () => {
+      const z = Math.random() ** 1.6;
+      return {
+        x: Math.random() * w,
+        y: Math.random() * h,
+        z,
+        size: 0.6 + z * 2.2,
+        alpha: 0.25 + z * 0.55,
+        speed: 3 + z * 12,                    // pixels per second
+        sway: 6 + Math.random() * 14,         // how far it wanders sideways
+        phase: Math.random() * Math.PI * 2,
+        color: pickColor()
+      };
+    });
+  }
+
+  function draw(t) {
+    ctx.clearRect(0, 0, w, h);
+    for (const s of specks) {
+      ctx.fillStyle = `rgba(232,238,247,${s.alpha})`;
+      ctx.fillRect(s.x, s.y, s.size, s.size);
+    }
+    const secs = t / 1000;
+    for (const d of dust) {
+      const x = d.x + Math.sin(secs * 0.15 + d.phase) * d.sway;
+      const y = d.y;
+      if (d.z > 0.45) {
+        // a soft halo on the nearest grains
+        ctx.fillStyle = `rgba(${d.color},${d.alpha * 0.12})`;
+        ctx.beginPath();
+        ctx.arc(x, y, d.size * 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = `rgba(${d.color},${d.alpha})`;
+      ctx.beginPath();
+      ctx.arc(x, y, d.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  let last = 0;
+  function loop(t) {
+    const dt = Math.min((t - last) / 1000, 0.1);
+    if (t - last > 33) {                     // about 30 frames a second
+      for (const d of dust) {
+        d.y -= d.speed * dt;
+        if (d.y < -10) { d.y = h + 10; d.x = Math.random() * w; }
+      }
+      draw(t);
+      last = t;
+    }
+    requestAnimationFrame(loop);
+  }
+  seed();
+  addEventListener('resize', () => { seed(); draw(performance.now()); });
+  if (still) draw(0); else requestAnimationFrame((t) => { last = t; loop(t); });
+})();
+
+// ---------- Clock, greeting, date ----------
+let use24 = store.get('np.24h', false);
+function tick() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2, '0');
+  $('hm').textContent = use24 ? `${String(h).padStart(2, '0')}:${m}` : `${((h + 11) % 12) + 1}:${m}`;
+  $('sec').textContent = String(now.getSeconds()).padStart(2, '0');
+  $('ampm').textContent = use24 ? '' : (h < 12 ? 'am' : 'pm');
+  $('greeting').textContent =
+    h < 5 ? 'Up late, Josh.' : h < 12 ? 'Good morning, Josh.' : h < 17 ? 'Good afternoon, Josh.' : 'Good evening, Josh.';
+  $('date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+}
+$('clock').addEventListener('click', () => { use24 = !use24; store.set('np.24h', use24); tick(); });
+tick();
+setInterval(tick, 1000);
+
+// ---------- Weather for Lansdowne (Open-Meteo, no key needed) ----------
+const SKY_WORDS = {
+  0: 'clear', 1: 'mostly clear', 2: 'partly cloudy', 3: 'overcast', 45: 'foggy', 48: 'foggy',
+  51: 'drizzling', 53: 'drizzling', 55: 'drizzling', 56: 'freezing drizzle', 57: 'freezing drizzle',
+  61: 'light rain', 63: 'raining', 65: 'heavy rain', 66: 'freezing rain', 67: 'freezing rain',
+  71: 'light snow', 73: 'snowing', 75: 'heavy snow', 77: 'snow grains',
+  80: 'rain showers', 81: 'rain showers', 82: 'heavy showers', 85: 'snow showers', 86: 'snow showers',
+  95: 'thunderstorms', 96: 'thunderstorms with hail', 99: 'thunderstorms with hail'
+};
+async function weather() {
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=39.9387&longitude=-75.2716'
+    + '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min'
+    + '&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=1';
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    const d = await res.json();
+    const temp = Math.round(d.current.temperature_2m);
+    const words = SKY_WORDS[d.current.weather_code] ?? 'mixed skies';
+    const hi = Math.round(d.daily.temperature_2m_max[0]);
+    const lo = Math.round(d.daily.temperature_2m_min[0]);
+    $('weather').textContent = `${temp}° and ${words} in Lansdowne. High ${hi}°, low ${lo}°.`;
+  } catch {
+    $('weather').textContent = "Weather isn't loading right now. It'll try again in 15 minutes.";
+  }
+}
+weather();
+setInterval(weather, 15 * 60 * 1000);
+
+// ---------- Search ----------
+const ENGINES = {
+  google:  { url: 'https://www.google.com/search?q=', hint: 'Search the web' },
+  chatgpt: { url: 'https://chatgpt.com/?q=',          hint: 'Ask ChatGPT' },
+  claude:  { url: 'https://claude.ai/new?q=',         hint: 'Ask Claude' }
+};
+let engine = store.get('np.engine', 'google');
+function showEngine() {
+  document.querySelectorAll('#engines button').forEach((b) =>
+    b.setAttribute('aria-pressed', String(b.dataset.engine === engine)));
+  $('query').placeholder = ENGINES[engine].hint;
+}
+$('engines').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  engine = b.dataset.engine;
+  store.set('np.engine', engine);
+  showEngine();
+  $('query').focus();
+});
+$('search').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = $('query').value.trim();
+  if (q) location.href = ENGINES[engine].url + encodeURIComponent(q);
+});
+showEngine();
+
+// ---------- Sites ----------
+const DEFAULT_SITES = {
+  active: 'ai',
+  groups: [
+    { id: 'ai', name: 'AI', sites: [
+      { id: uid(), name: 'ChatGPT', url: 'https://chatgpt.com' },
+      { id: uid(), name: 'Claude', url: 'https://claude.ai' },
+      { id: uid(), name: 'Gemini', url: 'https://gemini.google.com' },
+      { id: uid(), name: 'Codex', url: 'https://chatgpt.com/codex' },
+      { id: uid(), name: 'T3 Chat', url: 'https://t3.chat' },
+      { id: uid(), name: 'NotebookLM', url: 'https://notebooklm.google.com' }
+    ]},
+    { id: 'daily', name: 'Daily', sites: [
+      { id: uid(), name: 'YouTube', url: 'https://www.youtube.com' },
+      { id: uid(), name: 'Gmail', url: 'https://mail.google.com' },
+      { id: uid(), name: 'Calendar', url: 'https://calendar.google.com' },
+      { id: uid(), name: 'Drive', url: 'https://drive.google.com' },
+      { id: uid(), name: 'Notion', url: 'https://www.notion.so' },
+      { id: uid(), name: 'Reddit', url: 'https://www.reddit.com' }
+    ]},
+    { id: 'make', name: 'Make', sites: [
+      { id: uid(), name: 'GitHub', url: 'https://github.com' },
+      { id: uid(), name: 'MDN', url: 'https://developer.mozilla.org' },
+      { id: uid(), name: 'Sketchfab', url: 'https://sketchfab.com' },
+      { id: uid(), name: 'Blender', url: 'https://extensions.blender.org' },
+      { id: uid(), name: 'Muse', url: 'https://muse.ai' }
+    ]}
+  ]
+};
+let data = store.get('np.sites', null) || structuredClone(DEFAULT_SITES);
+let editing = false;
+let editingSiteId = null;
+const save = () => store.set('np.sites', data);
+const activeGroup = () => data.groups.find((g) => g.id === data.active) || data.groups[0];
+
+function normalizeUrl(raw) {
+  let s = raw.trim();
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
+  try { const u = new URL(s); return u.hostname.includes('.') ? u.href.replace(/\/$/, '') : null; }
+  catch { return null; }
+}
+function favicon(url) {
+  try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; }
+  catch { return ''; }
+}
+
+function renderTabs() {
+  const tabs = $('tabs');
+  tabs.innerHTML = '';
+  data.groups.forEach((g) => {
+    const b = document.createElement('button');
+    b.className = 'tab';
+    b.type = 'button';
+    b.role = 'tab';
+    b.textContent = g.name;
+    b.setAttribute('aria-selected', String(g.id === activeGroup().id));
+    b.addEventListener('click', () => { data.active = g.id; save(); render(); });
+    // While editing, drop a site on a tab to move it into that group
+    b.addEventListener('dragover', (e) => { if (editing) { e.preventDefault(); b.classList.add('drop-target'); } });
+    b.addEventListener('dragleave', () => b.classList.remove('drop-target'));
+    b.addEventListener('drop', (e) => {
+      e.preventDefault();
+      b.classList.remove('drop-target');
+      moveSiteToGroup(e.dataTransfer.getData('text/plain'), g.id);
+    });
+    tabs.appendChild(b);
+  });
+}
+
+function renderGrid() {
+  const grid = $('grid');
+  const group = activeGroup();
+  grid.innerHTML = '';
+  group.sites.forEach((site) => {
+    const li = document.createElement('li');
+    li.className = 'site';
+    li.dataset.id = site.id;
+    li.draggable = editing;
+
+    const a = document.createElement('a');
+    a.href = site.url;
+    const icon = document.createElement('div');
+    icon.className = 'icon';
+    const img = new Image();
+    img.alt = '';
+    img.src = favicon(site.url);
+    img.onerror = () => { icon.innerHTML = `<b>${site.name.charAt(0).toUpperCase()}</b>`; };
+    icon.appendChild(img);
+    const label = document.createElement('span');
+    label.textContent = site.name;
+    a.append(icon, label);
+    a.addEventListener('click', (e) => { if (editing) { e.preventDefault(); openSiteDialog(site); } });
+
+    const tools = document.createElement('div');
+    tools.className = 'tools';
+    tools.innerHTML = `<button type="button" aria-label="Edit ${site.name}">&#9998;</button>`
+      + `<button type="button" class="remove" aria-label="Remove ${site.name}">&times;</button>`;
+    tools.children[0].addEventListener('click', () => openSiteDialog(site));
+    tools.children[1].addEventListener('click', () => {
+      group.sites = group.sites.filter((s) => s.id !== site.id);
+      save(); renderGrid();
+    });
+
+    li.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', site.id);
+      li.classList.add('dragging');
+    });
+    li.addEventListener('dragend', () => li.classList.remove('dragging'));
+    li.addEventListener('dragover', (e) => { if (editing) e.preventDefault(); });
+    li.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const fromId = e.dataTransfer.getData('text/plain');
+      const from = group.sites.findIndex((s) => s.id === fromId);
+      const to = group.sites.findIndex((s) => s.id === site.id);
+      if (from < 0 || from === to) return;
+      const [moved] = group.sites.splice(from, 1);
+      group.sites.splice(to, 0, moved);
+      save(); renderGrid();
+    });
+
+    li.append(a, tools);
+    grid.appendChild(li);
+  });
+
+  // The add tile is always last
+  const add = document.createElement('li');
+  add.className = 'site';
+  add.innerHTML = '<button class="add" type="button"><div class="icon">+</div><span>Add site</span></button>';
+  add.firstChild.addEventListener('click', () => openSiteDialog(null));
+  grid.appendChild(add);
+}
+
+function moveSiteToGroup(siteId, groupId) {
+  const from = data.groups.find((g) => g.sites.some((s) => s.id === siteId));
+  const to = data.groups.find((g) => g.id === groupId);
+  if (!from || !to || from === to) return;
+  const site = from.sites.find((s) => s.id === siteId);
+  from.sites = from.sites.filter((s) => s.id !== siteId);
+  to.sites.push(site);
+  save(); render();
+}
+
+function render() {
+  $('sites').classList.toggle('editing', editing);
+  renderTabs();
+  renderGrid();
+}
+
+function openSiteDialog(site) {
+  editingSiteId = site ? site.id : null;
+  $('siteDialogTitle').textContent = site ? 'Edit site' : 'Add a site';
+  $('siteSave').textContent = site ? 'Save changes' : 'Add site';
+  $('siteName').value = site ? site.name : '';
+  $('siteUrl').value = site ? site.url : '';
+  $('siteError').textContent = '';
+  const owner = site ? data.groups.find((g) => g.sites.some((s) => s.id === site.id)) : activeGroup();
+  $('siteGroup').innerHTML = data.groups
+    .map((g) => `<option value="${g.id}" ${g.id === owner.id ? 'selected' : ''}>${g.name}</option>`).join('');
+  $('siteDialog').showModal();
+}
+$('siteUrl').addEventListener('input', () => { $('siteError').textContent = ''; });
+$('siteForm').addEventListener('submit', (e) => {
+  if (e.submitter?.value !== 'save') return;
+  const name = $('siteName').value.trim();
+  const url = normalizeUrl($('siteUrl').value);
+  if (!name) { e.preventDefault(); $('siteError').textContent = 'Give the site a name.'; return; }
+  if (!url) { e.preventDefault(); $('siteError').textContent = 'That address doesn’t look right. Try something like youtube.com.'; return; }
+  const groupId = $('siteGroup').value;
+  if (editingSiteId) {
+    const owner = data.groups.find((g) => g.sites.some((s) => s.id === editingSiteId));
+    const site = owner.sites.find((s) => s.id === editingSiteId);
+    site.name = name; site.url = url;
+    if (owner.id !== groupId) moveSiteToGroup(site.id, groupId);
+  } else {
+    data.groups.find((g) => g.id === groupId).sites.push({ id: uid(), name, url });
+  }
+  save(); render();
+});
+
+$('editToggle').addEventListener('click', () => {
+  editing = !editing;
+  $('editToggle').textContent = editing ? 'Done' : 'Edit sites';
+  $('editToggle').classList.toggle('on', editing);
+  $('editToggle').setAttribute('aria-pressed', String(editing));
+  render();
+});
+$('newGroup').addEventListener('click', () => {
+  const name = prompt('Name the new group');
+  if (!name?.trim()) return;
+  const g = { id: uid(), name: name.trim(), sites: [] };
+  data.groups.push(g);
+  data.active = g.id;
+  save(); render();
+});
+$('renameGroup').addEventListener('click', () => {
+  const g = activeGroup();
+  const name = prompt('Rename this group', g.name);
+  if (!name?.trim()) return;
+  g.name = name.trim();
+  save(); render();
+});
+$('deleteGroup').addEventListener('click', () => {
+  if (data.groups.length === 1) { alert('Keep at least one group. Rename this one instead.'); return; }
+  const g = activeGroup();
+  if (!confirm(`Delete "${g.name}" and its ${g.sites.length} sites?`)) return;
+  data.groups = data.groups.filter((x) => x.id !== g.id);
+  data.active = data.groups[0].id;
+  save(); render();
+});
+$('backup').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'start-page-sites.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+$('restore').addEventListener('click', () => $('restoreFile').click());
+$('restoreFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const parsed = JSON.parse(await file.text());
+    if (!Array.isArray(parsed.groups)) throw new Error('bad file');
+    data = parsed;
+    save(); render();
+  } catch {
+    alert('That file isn’t a start page backup. Pick the start-page-sites.json file you saved.');
+  }
+  e.target.value = '';
+});
+render();
+
+// ---------- Month calendar ----------
+let shown = new Date();
+shown.setDate(1);
+function renderMonth() {
+  const today = new Date();
+  const y = shown.getFullYear(), m = shown.getMonth();
+  $('monthTitle').innerHTML = `${shown.toLocaleDateString(undefined, { month: 'long' })}`
+    + (y !== today.getFullYear() ? `<small>${y}</small>` : '');
+  const days = $('days');
+  days.innerHTML = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => `<span class="dow">${d}</span>`).join('');
+  const start = new Date(y, m, 1 - new Date(y, m, 1).getDay());
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    if (i >= 35 && d.getMonth() !== m) break;   // skip a sixth row that is entirely next month
+    const a = document.createElement('a');
+    a.href = `https://calendar.google.com/calendar/r/day/${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+    a.textContent = d.getDate();
+    a.title = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    if (d.getMonth() !== m) a.classList.add('out');
+    if (d.toDateString() === today.toDateString()) a.classList.add('today');
+    days.appendChild(a);
+  }
+}
+$('prevMonth').addEventListener('click', () => { shown.setMonth(shown.getMonth() - 1); renderMonth(); });
+$('nextMonth').addEventListener('click', () => { shown.setMonth(shown.getMonth() + 1); renderMonth(); });
+$('thisMonth').addEventListener('click', () => { shown = new Date(); shown.setDate(1); renderMonth(); });
+renderMonth();
+
+// ---------- Google Calendar agenda ----------
+function gcalUrl(input) {
+  const s = input.trim();
+  if (!s) return null;
+  if (s.includes('calendar.google.com')) {
+    const src = s.match(/src="([^"]+)"/);           // accept a pasted <iframe> embed code too
+    const url = src ? src[1] : s;
+    return url.startsWith('http') ? url : null;
+  }
+  if (!s.includes('@')) return null;
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return 'https://calendar.google.com/calendar/embed?src=' + encodeURIComponent(s)
+    + '&ctz=' + encodeURIComponent(tz)
+    + '&mode=AGENDA&showTitle=0&showNav=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0&showDate=0';
+}
+function renderGcal() {
+  const url = store.get('np.gcal', null);
+  const slot = $('gcalSlot');
+  $('gcalChange').hidden = !url;
+  if (url) {
+    slot.innerHTML = '';
+    const frame = document.createElement('iframe');
+    frame.className = 'gcal-frame';
+    frame.title = 'Your Google Calendar';
+    frame.src = url;
+    slot.appendChild(frame);
+  } else {
+    slot.innerHTML = '<div class="gcal-setup"><p>Connect your Google Calendar to see what’s next.</p>'
+      + '<button type="button" id="gcalStart">Connect calendar</button></div>';
+    $('gcalStart').addEventListener('click', openGcal);
+  }
+}
+function openGcal() {
+  $('gcalInput').value = '';
+  $('gcalError').textContent = '';
+  $('gcalDialog').showModal();
+}
+$('gcalChange').addEventListener('click', openGcal);
+$('gcalInput').addEventListener('input', () => { $('gcalError').textContent = ''; });
+$('gcalForm').addEventListener('submit', (e) => {
+  if (e.submitter?.value !== 'save') return;
+  const url = gcalUrl($('gcalInput').value);
+  if (!url) { e.preventDefault(); $('gcalError').textContent = 'Enter your Gmail address or paste the embed link from Google Calendar.'; return; }
+  store.set('np.gcal', url);
+  renderGcal();
+});
+renderGcal();
+</script>
+</body>
+</html>
