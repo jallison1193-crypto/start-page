@@ -1,434 +1,846 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-accent="teal">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Night Sky Start</title>
-<meta name="color-scheme" content="dark">
+<title>Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+// Decide light or dark before the page paints, so it never flashes the wrong theme
+window.pickTheme = function (s, wx) {
+  if (s.theme === 'light' || s.theme === 'dark') return s.theme;
+  if (s.theme === 'system') return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  if (s.theme !== 'schedule') return 'dark';
+  const now = Date.now();
+  if (s.schedule !== 'times' && wx && wx.daily) {
+    // The first day whose sunset is still ahead: light once its sun is up
+    const i = wx.daily.sunset.findIndex((set) => now < set * 1000);
+    if (i >= 0) return now >= wx.daily.sunrise[i] * 1000 ? 'light' : 'dark';
+  }
+  const mins = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
+  const d = new Date(), cur = d.getHours() * 60 + d.getMinutes();
+  const a = mins(s.lightAt || '07:00'), b = mins(s.darkAt || '19:00');
+  return (a <= b ? cur >= a && cur < b : cur >= a || cur < b) ? 'light' : 'dark';
+};
+try {
+  const s = JSON.parse(localStorage.getItem('sp.settings') || '{}');
+  const w = JSON.parse(localStorage.getItem('sp.wx') || 'null');
+  document.documentElement.dataset.theme = pickTheme({ theme: 'dark', ...s }, w && w.data);
+  document.documentElement.dataset.accent = s.accent || 'teal';
+  document.documentElement.dataset.set = s.set || 'space';
+} catch {}
+</script>
 <style>
   :root {
-    --void: #000000;
-    --starlight: #E8EEF7;
-    --dust: #8792A8;
-    --faint: #4A5468;
-    --line: #18202E;
-    --oiii: #79E0D4;
-    --halpha: #F07A93;
-    --veil: rgba(4, 7, 13, 0.78);
     --display: "Outfit", system-ui, sans-serif;
     --text: "Instrument Sans", system-ui, sans-serif;
+    --row: 150px;
+    --gap: 14px;
+    --cols: 4;
+    --radius: 22px;
   }
+  :root, [data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #000000;
+    --bg2: #000000;
+    --ink: #E8EEF7;
+    --dim: #8792A8;
+    --faint: #717B95;
+    --line: rgba(232, 238, 247, 0.08);
+    --line-strong: rgba(232, 238, 247, 0.16);
+    --pane: rgba(10, 14, 22, 0.58);
+    --pane-solid: #080B12;
+    --field: rgba(232, 238, 247, 0.04);
+    --hover: rgba(232, 238, 247, 0.06);
+    --ink-rgb: 232, 238, 247;
+    --sun: #F6C27A;
+    --moon-lit: #E8EEF7;
+    --moon-dark: #141A26;
+    --glow: 0.22;
+    --on-accent: #000000;
+    --dust-alpha: 1;
+  }
+  [data-theme="light"] {
+    color-scheme: light;
+    --bg: #EEF2F8;
+    --bg2: #DFE6F0;
+    --ink: #0D1524;
+    --dim: #55607A;
+    --faint: #646E82;
+    --line: rgba(13, 21, 36, 0.09);
+    --line-strong: rgba(13, 21, 36, 0.18);
+    --pane: rgba(255, 255, 255, 0.62);
+    --pane-solid: #FFFFFF;
+    --field: rgba(13, 21, 36, 0.04);
+    --hover: rgba(13, 21, 36, 0.05);
+    --ink-rgb: 13, 21, 36;
+    --sun: #C9821A;
+    --moon-lit: #FFFFFF;
+    --moon-dark: rgba(13, 21, 36, 0.16);
+    --glow: 0;
+    --on-accent: #FFFFFF;
+    --dust-alpha: 0.4;
+  }
+  /* Accent colors: the interactive color, plus "now" for today and the current moment */
+  [data-accent="teal"]   { --accent: #79E0D4; --accent-rgb: 121, 224, 212; --now: #F07A93; --now-rgb: 240, 122, 147; }
+  [data-accent="violet"] { --accent: #A99BFF; --accent-rgb: 169, 155, 255; --now: #F07A93; --now-rgb: 240, 122, 147; }
+  [data-accent="amber"]  { --accent: #F2B872; --accent-rgb: 242, 184, 114; --now: #F07A93; --now-rgb: 240, 122, 147; }
+  [data-accent="rose"]   { --accent: #F07A93; --accent-rgb: 240, 122, 147; --now: #79E0D4; --now-rgb: 121, 224, 212; }
+  [data-theme="light"][data-accent="teal"]   { --accent: #0B8276; --accent-rgb: 11, 130, 118; --now: #C8325A; --now-rgb: 200, 50, 90; }
+  [data-theme="light"][data-accent="violet"] { --accent: #5847D2; --accent-rgb: 88, 71, 210; --now: #C8325A; --now-rgb: 200, 50, 90; }
+  [data-theme="light"][data-accent="amber"]  { --accent: #A35F0A; --accent-rgb: 163, 95, 10; --now: #C8325A; --now-rgb: 200, 50, 90; }
+  [data-theme="light"][data-accent="rose"]   { --accent: #C8325A; --accent-rgb: 200, 50, 90; --now: #0B8276; --now-rgb: 11, 130, 118; }
+  [data-accent="green"]  { --accent: #86EFAC; --accent-rgb: 134, 239, 172; --now: #F07A93; --now-rgb: 240, 122, 147; }
+  [data-accent="silver"] { --accent: #C9D3E3; --accent-rgb: 201, 211, 227; --now: #F07A93; --now-rgb: 240, 122, 147; }
+  [data-theme="light"][data-accent="green"]  { --accent: #13804A; --accent-rgb: 19, 128, 74; --now: #C8325A; --now-rgb: 200, 50, 90; }
+  [data-theme="light"][data-accent="silver"] { --accent: #3F4A5C; --accent-rgb: 63, 74, 92; --now: #C8325A; --now-rgb: 200, 50, 90; }
+
+  /* Theme sets: the backdrop glow and glass tint behind everything. Deep space is plain black. */
+  :root { --neb: none; }
+  [data-theme="dark"][data-set="nebula"] {
+    --bg: #07040F; --bg2: #0B0618; --pane: rgba(16, 10, 30, 0.55); --pane-solid: #0C0817;
+    --neb: radial-gradient(60% 50% at 82% 8%, rgba(150, 100, 255, 0.24), transparent 70%),
+           radial-gradient(45% 40% at 8% 92%, rgba(240, 100, 170, 0.16), transparent 70%),
+           radial-gradient(35% 30% at 40% 45%, rgba(90, 120, 255, 0.08), transparent 70%);
+  }
+  [data-theme="dark"][data-set="aurora"] {
+    --bg: #020A0C; --bg2: #03080F; --pane: rgba(6, 18, 22, 0.55); --pane-solid: #061014;
+    --neb: radial-gradient(90% 38% at 50% -4%, rgba(70, 240, 170, 0.2), transparent 70%),
+           radial-gradient(40% 30% at 88% 6%, rgba(80, 150, 255, 0.16), transparent 70%),
+           radial-gradient(30% 22% at 12% 4%, rgba(160, 110, 255, 0.1), transparent 70%);
+  }
+  [data-theme="dark"][data-set="lunar"] {
+    --bg: #050506; --bg2: #0B0C0E; --pane: rgba(20, 21, 24, 0.6); --pane-solid: #0E0F11;
+    --dim: #8E939C; --faint: #737780;
+    --neb: radial-gradient(80% 60% at 50% 115%, rgba(220, 225, 235, 0.1), transparent 70%);
+  }
+  [data-theme="light"][data-set="nebula"] {
+    --bg: #F3F0FB; --bg2: #E6E0F5;
+    --neb: radial-gradient(60% 50% at 82% 8%, rgba(150, 100, 255, 0.18), transparent 70%),
+           radial-gradient(45% 40% at 8% 92%, rgba(240, 100, 170, 0.12), transparent 70%);
+  }
+  [data-theme="light"][data-set="aurora"] {
+    --bg: #EEF7F5; --bg2: #E0ECF0;
+    --neb: radial-gradient(90% 38% at 50% -4%, rgba(40, 200, 140, 0.18), transparent 70%),
+           radial-gradient(40% 30% at 88% 6%, rgba(60, 130, 255, 0.12), transparent 70%);
+  }
+  [data-theme="light"][data-set="lunar"] {
+    --bg: #F4F4F5; --bg2: #E7E8EA; --pane: rgba(255, 255, 255, 0.66);
+    --dim: #5B606A; --faint: #686C74;
+    --neb: radial-gradient(80% 60% at 50% 115%, rgba(13, 21, 36, 0.06), transparent 70%);
+  }
+
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--void); color: var(--starlight); }
+  html { background: var(--bg); }
   body {
-    font-family: var(--text);
-    font-size: 15px;
-    line-height: 1.5;
+    margin: 0;
     min-height: 100vh;
+    background: linear-gradient(180deg, var(--bg), var(--bg2)) fixed;
+    color: var(--ink);
+    font: 15px/1.5 var(--text);
     -webkit-font-smoothing: antialiased;
   }
-  button, input, select { font: inherit; color: inherit; }
+  button, input, select, textarea { font: inherit; color: inherit; }
   button { -webkit-appearance: none; appearance: none; }
-  :focus-visible { outline: 2px solid var(--oiii); outline-offset: 3px; border-radius: 6px; }
+  ::selection { background: rgba(var(--accent-rgb), 0.3); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+  .theming, .theming * { transition: background-color 0.6s, color 0.6s, border-color 0.6s, fill 0.6s !important; }
+  svg.i { width: 18px; height: 18px; flex: none; }
 
-  /* The sky sits behind everything */
+  body::before { content: ""; position: fixed; inset: 0; z-index: 0; background: var(--neb); pointer-events: none; }
   #sky { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
 
-  .shell {
+  /* ---------- Top bar ---------- */
+  .topbar {
     position: relative;
-    z-index: 1;
-    max-width: 1320px;
+    z-index: 2;
+    max-width: 1300px;
     margin: 0 auto;
-    padding: clamp(24px, 5vw, 64px) clamp(16px, 5vw, 64px) 48px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 340px;
-    grid-template-areas:
-      "hero   cal"
-      "search cal"
-      "sites  cal";
-    grid-template-rows: auto auto 1fr;
-    column-gap: clamp(32px, 5vw, 80px);
-    row-gap: 32px;
-  }
-
-  /* ---------- Clock ---------- */
-  .hero { grid-area: hero; }
-  .time {
+    padding: 18px clamp(16px, 4vw, 40px) 0;
     display: flex;
-    align-items: flex-start;
-    gap: 0.12em;
-    font-family: var(--display);
-    font-weight: 100;
-    font-size: clamp(5rem, 12vw, 10.5rem);
-    line-height: 0.9;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 48px rgba(121, 224, 212, 0.22), 0 0 2px rgba(232, 238, 247, 0.55);
-    cursor: pointer;
-    user-select: none;
-    background: none;
-    border: 0;
-    padding: 0;
-    margin: 0 0 20px -0.04em;
+    justify-content: flex-end;
+    gap: 4px;
   }
-  .time .sub {
-    display: flex;
-    flex-direction: column;
-    gap: 0.1em;
-    font-size: 0.22em;
-    font-weight: 200;
-    line-height: 1;
-    letter-spacing: 0;
-    padding-top: 0.38em;
-    color: var(--dust);
-    text-shadow: none;
-  }
-  .time .sec { color: var(--halpha); }
-  .greet { margin: 0; font-size: 1.25rem; font-weight: 500; }
-  .greet .date { color: var(--dust); font-weight: 400; }
-  .weather { margin: 4px 0 0; color: var(--dust); min-height: 1.5em; }
-
-  /* ---------- Search ---------- */
-  .search { grid-area: search; max-width: 640px; }
-  .engines { display: flex; gap: 4px; margin-bottom: 10px; }
-  .engines button {
-    background: none;
-    border: 0;
-    padding: 4px 10px;
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
     border-radius: 999px;
-    color: var(--dust);
+    border: 0;
+    background: none;
+    color: var(--dim);
     cursor: pointer;
     font-size: 0.875rem;
   }
-  .engines button:hover { color: var(--starlight); }
-  .engines button[aria-pressed="true"] { color: var(--void); background: var(--oiii); font-weight: 500; }
-  .search input {
-    width: 100%;
-    padding: 14px 18px;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(10, 14, 22, 0.7);
-    backdrop-filter: blur(6px);
-    font-size: 1.05rem;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .search input::placeholder { color: var(--faint); }
-  .search input:focus { border-color: var(--oiii); }
+  .pill:hover { color: var(--ink); background: var(--hover); }
+  .pill[aria-pressed="true"] { color: var(--on-accent); background: var(--accent); }
 
-  /* ---------- Sites ---------- */
-  .sites { grid-area: sites; }
-  .sites-bar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 14px; }
-  .tab {
-    background: none;
-    border: 0;
-    padding: 6px 12px;
-    font-size: 1rem;
-    color: var(--dust);
-    cursor: pointer;
-    border-radius: 8px;
+  /* ---------- The board: a snap grid ---------- */
+  .board-wrap { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; padding: 10px clamp(16px, 4vw, 40px) 120px; }
+  .board {
     position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    grid-auto-rows: var(--row);
+    grid-auto-flow: row dense;
+    gap: var(--gap);
   }
-  .tab:hover { color: var(--starlight); }
-  .tab[aria-selected="true"] { color: var(--starlight); }
-  .tab[aria-selected="true"]::after {
+  /* In arrange mode the empty grid cells show through, so you can see where things snap */
+  .board::before {
     content: "";
     position: absolute;
-    left: 12px; right: 12px; bottom: 0;
-    height: 2px;
-    border-radius: 2px;
-    background: var(--oiii);
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    background: rgba(var(--accent-rgb), 0.07);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--gap)), transparent 0), linear-gradient(to bottom, #000 calc(100% - var(--gap)), transparent 0);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--gap)), transparent 0), linear-gradient(to bottom, #000 calc(100% - var(--gap)), transparent 0);
+    -webkit-mask-size: calc((100% + var(--gap)) / var(--cols)) calc(var(--row) + var(--gap));
+    mask-size: calc((100% + var(--gap)) / var(--cols)) calc(var(--row) + var(--gap));
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
   }
-  .tab.drop-target { color: var(--oiii); }
-  .bar-actions { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
-  .quiet {
-    background: none;
-    border: 0;
-    padding: 6px 10px;
-    border-radius: 8px;
-    color: var(--dust);
-    cursor: pointer;
-    font-size: 0.875rem;
-  }
-  .quiet:hover { color: var(--starlight); background: rgba(232, 238, 247, 0.06); }
-  .quiet.on { color: var(--oiii); }
-  .edit-only { display: none; }
-  .editing .edit-only { display: inline-flex; }
+  .arranging .board::before { opacity: 1; }
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
-    gap: 6px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .site { position: relative; }
-  .site a, .site .add {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 18px 8px 14px;
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--starlight);
-    font-size: 0.875rem;
-    text-align: center;
-    transition: background 0.15s;
-  }
-  .site a:hover { background: rgba(121, 224, 212, 0.07); }
-  .site a span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .icon {
-    width: 40px; height: 40px;
-    border-radius: 10px;
-    display: grid;
-    place-items: center;
-    background: rgba(232, 238, 247, 0.06);
+  .widget {
+    position: relative;
+    min-width: 0;
+    container-type: size;
+    border-radius: var(--radius);
+    background: var(--pane);
+    border: 1px solid var(--line);
+    -webkit-backdrop-filter: blur(18px) saturate(1.3);
+    backdrop-filter: blur(18px) saturate(1.3);
     overflow: hidden;
   }
-  .icon img { width: 26px; height: 26px; }
-  .icon b { font-weight: 600; color: var(--oiii); font-size: 1.1rem; }
-  .site .tools {
-    position: absolute; top: 4px; right: 4px;
-    display: none; gap: 2px;
-  }
-  .editing .site .tools { display: flex; }
-  .editing .site a { cursor: grab; outline: 1px dashed var(--line); outline-offset: -1px; }
-  .site .tools button {
-    width: 26px; height: 26px;
-    border: 0; border-radius: 7px;
-    background: var(--veil);
-    color: var(--dust);
-    cursor: pointer;
-    font-size: 0.8rem;
-    line-height: 1;
-  }
-  .site .tools button:hover { color: var(--starlight); }
-  .site .tools button.remove:hover { color: var(--halpha); }
-  .site.dragging { opacity: 0.35; }
-  .site .add {
-    width: 100%;
-    background: none;
-    border: 1px dashed var(--faint);
-    color: var(--dust);
-    cursor: pointer;
-  }
-  .site .add:hover { color: var(--oiii); border-color: var(--oiii); }
-  .add .icon { background: none; font-size: 1.6rem; font-weight: 300; }
-  .empty { color: var(--dust); margin: 8px 0; }
+  .widget.bare { background: none; border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .w-s { grid-column: span 1; grid-row: span 1; }
+  .w-m { grid-column: span 2; grid-row: span 1; }
+  .w-l { grid-column: span 2; grid-row: span 2; }
+  .w-w { grid-column: span 4; grid-row: span 1; }
+  .body { position: absolute; inset: 0; padding: 16px 18px; display: flex; flex-direction: column; min-height: 0; }
 
-  /* ---------- Calendar column ---------- */
-  .cal {
-    grid-area: cal;
-    border-left: 1px solid var(--line);
-    padding-left: clamp(24px, 3vw, 40px);
-    align-self: start;
+  /* Arrange mode */
+  .arranging .widget { cursor: grab; touch-action: none; outline: 1px dashed var(--line-strong); outline-offset: -1px; }
+  .arranging .widget.bare { background: var(--pane); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+  .arranging .body { opacity: 0.35; pointer-events: none; transition: opacity 0.2s; }
+  .widget.lifted {
+    z-index: 10;
+    cursor: grabbing;
+    outline: 1px solid rgba(var(--accent-rgb), 0.6);
+    box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.7);
+    background: var(--pane-solid);
   }
-  .month-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
-  .month-head h2 {
-    margin: 0;
-    font-family: var(--display);
-    font-weight: 200;
-    font-size: 2rem;
-    line-height: 1;
-    letter-spacing: -0.01em;
-  }
-  .month-head h2 small { font-size: 0.55em; color: var(--dust); margin-left: 6px; }
-  .month-nav { display: flex; gap: 2px; }
-  .month-nav button { font-size: 1.1rem; padding: 4px 10px; }
-  .days {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
-  .days .dow { color: var(--faint); font-size: 0.75rem; padding-bottom: 6px; }
-  .days a {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    margin: 0 auto;
-    border-radius: 50%;
-    text-decoration: none;
-    color: var(--starlight);
-    font-size: 0.9rem;
-  }
-  .days a:hover { background: rgba(121, 224, 212, 0.1); }
-  .days a.out { color: var(--faint); }
-  .days a.today { background: var(--halpha); color: var(--void); font-weight: 600; }
-
-  /* ---------- Tonight's sky ---------- */
-  .sky-panel { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--line); }
-  .sky-panel h3 {
-    margin: 0 0 18px;
-    font-family: var(--display);
-    font-weight: 200;
-    font-size: 1.6rem;
-    line-height: 1;
-  }
-  .moon-row { display: flex; align-items: center; gap: 18px; }
-  .moon { width: 64px; height: 64px; flex: none; filter: drop-shadow(0 0 10px rgba(232, 238, 247, 0.28)); }
-  .moon-name { margin: 0; font-weight: 500; }
-  .dim { color: var(--dust); }
-  .moon-row .dim { margin: 2px 0 0; font-size: 0.875rem; }
-  .sun-row { display: flex; gap: 28px; margin: 22px 0 0; }
-  .sun-row div { display: flex; flex-direction: column; }
-  .sun-row .dim { font-size: 0.8rem; }
-  .sun-row strong { font-weight: 500; font-variant-numeric: tabular-nums; }
-  .hours {
-    list-style: none;
-    margin: 22px 0 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    text-align: center;
-    font-variant-numeric: tabular-nums;
-  }
-  .hours li { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; }
-  .hours .h { color: var(--faint); }
-  .hours .t { font-size: 0.95rem; color: var(--starlight); }
-  .hours .r { color: var(--oiii); min-height: 1.2em; }
-  .hours li:first-child .h { color: var(--halpha); }
-
-  /* ---------- Dialogs ---------- */
-  dialog {
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: #070A11;
-    color: var(--starlight);
-    padding: 24px;
-    width: min(420px, calc(100vw - 32px));
-  }
-  dialog::backdrop { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(2px); }
-  dialog h2 { margin: 0 0 16px; font-size: 1.15rem; font-weight: 600; }
-  dialog label { display: block; font-size: 0.875rem; color: var(--dust); margin-bottom: 14px; }
-  dialog input, dialog select {
-    display: block;
-    width: 100%;
-    margin-top: 6px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--line);
-    background: #000;
-    outline: none;
-  }
-  dialog input:focus, dialog select:focus { border-color: var(--oiii); }
-  dialog .hint { font-size: 0.8rem; color: var(--faint); margin: -6px 0 14px; }
-  dialog .error { color: var(--halpha); font-size: 0.85rem; min-height: 1.2em; margin: -4px 0 10px; }
-  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
-  .primary {
-    background: var(--oiii); color: var(--void);
+  .widget.lifted .body { opacity: 0.6; }
+  .chrome { position: absolute; top: 10px; left: 10px; right: 10px; display: none; align-items: center; gap: 6px; z-index: 3; }
+  .arranging .chrome { display: flex; }
+  .chrome > * { box-shadow: 0 0 0 1px var(--line-strong); background: var(--pane-solid); }
+  .grip {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 30px; padding: 0 12px 0 8px;
     border: 0; border-radius: 999px;
-    padding: 8px 18px; font-weight: 500; cursor: pointer;
+    color: var(--ink); font-size: 0.8125rem; font-weight: 500;
+    cursor: grab; min-width: 0;
+  }
+  .grip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sizes { margin-left: auto; display: flex; gap: 2px; padding: 3px; border-radius: 999px; }
+  .sizes button {
+    width: 32px; height: 24px; border: 0; border-radius: 999px;
+    background: none; color: var(--dim); display: grid; place-items: center; cursor: pointer;
+  }
+  .sizes button:hover { color: var(--ink); }
+  .sizes button[aria-checked="true"] { background: var(--accent); color: var(--on-accent); }
+  .sizes svg { width: 19px; height: 9px; }
+  .hide-w { width: 30px; height: 30px; flex: none; border: 0; border-radius: 999px; color: var(--dim); display: grid; place-items: center; cursor: pointer; }
+  .hide-w:hover { color: var(--now); }
+  .widget.ding { animation: ding 1.2s ease-in-out 3; }
+  @keyframes ding { 50% { box-shadow: 0 0 0 2px var(--accent), 0 0 40px rgba(var(--accent-rgb), 0.35); } }
+
+  .arrange-bar {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20;
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 8px 8px 20px; border-radius: 999px;
+    background: var(--pane-solid); color: var(--dim); font-size: 0.875rem;
+    box-shadow: 0 0 0 1px var(--line-strong), 0 20px 50px -20px rgba(0, 0, 0, 0.7);
+    width: max-content; max-width: calc(100vw - 32px);
+  }
+  .arrange-bar[hidden] { display: none; }
+  .empty-board { grid-column: 1 / -1; grid-row: span 2; display: grid; place-content: center; justify-items: center; gap: 14px; color: var(--dim); text-align: center; }
+
+  /* ---------- Shared bits inside widgets ---------- */
+  .w-head { display: flex; align-items: center; gap: 8px; min-height: 28px; margin-bottom: 8px; flex: none; }
+  .w-head h2 {
+    margin: 0; font: 500 0.8125rem/1.2 var(--text); color: var(--dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .w-meta { font-size: 0.75rem; color: var(--faint); white-space: nowrap; }
+  .w-head .act { margin-left: auto; display: flex; gap: 2px; flex: none; }
+  .mini {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 28px; padding: 0 10px; border: 0; border-radius: 999px;
+    background: none; color: var(--dim); font-size: 0.8125rem; cursor: pointer; white-space: nowrap; text-decoration: none;
+  }
+  .mini:hover { color: var(--ink); background: var(--hover); }
+  .mini.on { color: var(--accent); }
+  .mini.ic { width: 28px; padding: 0; }
+  .note { margin: 0; color: var(--dim); font-size: 0.875rem; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 36px; padding: 0 16px; border-radius: 999px;
+    border: 1px solid var(--line-strong); background: none; color: var(--ink);
+    cursor: pointer; font-size: 0.875rem; font-weight: 500; white-space: nowrap;
+  }
+  .btn:hover { background: var(--hover); }
+  .btn.primary { background: var(--accent); border-color: transparent; color: var(--on-accent); }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn.quiet { border-color: transparent; color: var(--dim); }
+  .btn.quiet:hover { color: var(--ink); }
+  .btn.danger { background: var(--now); color: var(--on-accent); border-color: transparent; }
+  .btn.sm { height: 32px; padding: 0 14px; }
+  .btn.ic { width: 32px; padding: 0; }
+
+  /* ---------- Clock ---------- */
+  .clock { height: 100%; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .time {
+    display: flex; align-items: flex-start; gap: 0.1em;
+    font: 100 var(--fs)/0.86 var(--display);
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 48px rgba(var(--accent-rgb), var(--glow)), 0 0 2px rgba(var(--ink-rgb), calc(var(--glow) * 2.4));
+    background: none; border: 0; padding: 0; margin: 0 0 0 -0.04em;
+    color: var(--ink); cursor: pointer; user-select: none; white-space: nowrap;
+  }
+  [data-theme="light"] .time { font-weight: 200; }
+  .time .sub {
+    display: flex; flex-direction: column; gap: 0.12em;
+    font-size: 0.22em; font-weight: 200; line-height: 1; letter-spacing: 0;
+    padding-top: 0.36em; color: var(--dim); text-shadow: none;
+  }
+  .time .sec { color: var(--now); }
+  .time .sec:empty { display: none; }
+  .clock-meta p { margin: 0; }
+  .greet { font-size: 1.15rem; font-weight: 500; }
+  .date { color: var(--dim); }
+  .wxline { color: var(--dim); margin-top: 2px !important; }
+  .clock-l { --fs: min(46cqh, 27cqi); }
+  .clock-l .time { margin-bottom: 18px; }
+  .clock-s { --fs: min(46cqh, 26cqi); }
+  .clock-s .time { margin-bottom: 8px; }
+  .clock-s .greet, .clock-s .wxline { display: none; }
+  .clock-s .date { font-size: 0.875rem; }
+  .clock-m, .clock-w { flex-direction: row; align-items: center; justify-content: space-between; gap: 24px; }
+  .clock-m { --fs: min(64cqh, 16cqi); }
+  .clock-w { --fs: min(64cqh, 10cqi); }
+  .clock-m .clock-meta, .clock-w .clock-meta { text-align: right; min-width: 0; }
+  .clock-m .wxline { display: none; }
+  @container (max-width: 520px) {
+    .clock-m, .clock-w { flex-direction: column; align-items: flex-start; justify-content: center; gap: 8px; --fs: min(46cqh, 24cqi); }
+    .clock-m .clock-meta, .clock-w .clock-meta { text-align: left; }
+    .clock-m .greet, .clock-w .greet, .clock-w .wxline { display: none; }
   }
 
-  /* ---------- Small screens ---------- */
-  @media (max-width: 900px) {
-    .shell {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: "hero" "search" "sites" "cal";
-    }
-    .cal { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 28px; }
+  /* ---------- Search ---------- */
+  .search { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+  .engines { display: flex; gap: 2px; flex-wrap: wrap; }
+  .engines button {
+    height: 28px; padding: 0 12px; border: 0; border-radius: 999px;
+    background: none; color: var(--dim); cursor: pointer; font-size: 0.8125rem;
+  }
+  .engines button:hover { color: var(--ink); }
+  .engines button[aria-pressed="true"] { color: var(--on-accent); background: var(--accent); font-weight: 500; }
+  .os-link {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    height: 28px; padding: 0 12px; border-radius: 999px;
+    color: var(--dim); font-size: 0.8125rem; text-decoration: none; white-space: nowrap;
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+  }
+  .os-link:hover { color: var(--ink); background: var(--hover); }
+  .os-link svg { width: 15px; height: 15px; }
+  @container (max-width: 560px) {
+    .engines { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: none; }
+    .engines > * { flex: none; }
+  }
+  .field-search {
+    display: flex; align-items: center; gap: 10px;
+    height: 50px; padding: 0 12px 0 16px; border-radius: 16px;
+    background: var(--field); border: 1px solid var(--line-strong); color: var(--dim);
+    transition: border-color 0.2s;
+  }
+  .field-search:focus-within { border-color: var(--accent); }
+  .field-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; outline: none; font-size: 1.05rem; color: var(--ink); }
+  .field-search input::placeholder { color: var(--faint); }
+  .field-search input::-webkit-search-cancel-button { display: none; }
+  kbd {
+    font: 500 0.75rem/1 var(--text); color: var(--faint);
+    padding: 4px 7px; border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line-strong);
+  }
+
+  /* ---------- Weather ---------- */
+  .wx-main { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 0; }
+  .wx-now { display: flex; align-items: center; gap: 12px; flex: none; }
+  .wx-icon svg { width: 38px; height: 38px; }
+  .wx-temp { font: 200 3.3rem/1 var(--display); letter-spacing: -0.03em; }
+  .wx-desc { display: flex; flex-direction: column; font-size: 0.8125rem; color: var(--dim); line-height: 1.35; }
+  .wx-desc strong { color: var(--ink); font-weight: 500; font-size: 0.9375rem; }
+  .hours {
+    list-style: none; margin: 0; padding: 0; flex: 1; max-width: 520px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(34px, 1fr); gap: 2px;
+    text-align: center; font-variant-numeric: tabular-nums;
+  }
+  .hours li { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 0.75rem; }
+  .hours .h { color: var(--faint); }
+  .hours li:first-child .h { color: var(--now); }
+  .hours svg { width: 18px; height: 18px; color: var(--dim); }
+  .hours .t { font-size: 0.875rem; }
+  .hours .r { color: var(--accent); font-size: 0.6875rem; min-height: 1em; line-height: 1; }
+  .hours li:nth-child(n+7) { display: none; }
+  .wx-w .hours li:nth-child(n+7) { display: flex; }
+  @container (max-width: 520px) { .hours li:nth-child(n+5) { display: none !important; } }
+  @container (max-width: 400px) { .hours { display: none; } }
+  .wx-s .wx-main { flex: 1; }
+  .wx-s .wx-temp { font-size: 2.8rem; }
+  .days-list { list-style: none; margin: auto 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); display: grid; gap: 4px; }
+  .days-list li { display: grid; grid-template-columns: 52px 20px 30px 1fr 30px 36px; align-items: center; gap: 10px; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+  .days-list svg { width: 18px; height: 18px; color: var(--dim); }
+  .days-list .lo { color: var(--dim); text-align: right; }
+  .days-list .rain { color: var(--accent); font-size: 0.75rem; text-align: right; }
+  .range { height: 4px; border-radius: 4px; background: var(--hover); position: relative; }
+  .range i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.7), var(--sun)); }
+
+  /* ---------- Sky ---------- */
+  .sky-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .sky-top { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .moon { width: min(60px, 34cqh); height: auto; flex: none; filter: drop-shadow(0 0 10px rgba(var(--ink-rgb), calc(var(--glow) * 1.3))); }
+  .moon-dark { fill: var(--moon-dark); }
+  .moon-lit { fill: var(--moon-lit); }
+  [data-theme="light"] .moon { filter: drop-shadow(0 1px 2px rgba(13, 21, 36, 0.2)); }
+  .moon-text { display: flex; flex-direction: column; min-width: 0; font-size: 0.8125rem; color: var(--dim); line-height: 1.35; }
+  .moon-text strong { color: var(--ink); font-weight: 500; font-size: 0.9375rem; }
+  .sun { display: grid; grid-auto-flow: column; gap: 22px; margin: 0; }
+  .sun div { display: flex; flex-direction: column; }
+  .sun dt { font-size: 0.75rem; color: var(--faint); }
+  .sun dd { margin: 0; font-variant-numeric: tabular-nums; }
+  @container (max-width: 540px) { .sky-m .sun { display: none; } }
+  .arc-wrap { flex: 1; min-height: 0; margin: 10px 0 0; display: flex; }
+  .arc { width: 100%; height: 100%; overflow: visible; }
+  .arc .horizon { stroke: var(--line-strong); stroke-width: 1; }
+  .arc .track { fill: none; stroke: var(--line-strong); stroke-width: 1.2; stroke-dasharray: 0.006 0.012; }
+  .arc .done { fill: none; stroke: var(--sun); stroke-width: 1.6; stroke-linecap: round; }
+  .arc .sun-glow { fill: var(--sun); opacity: 0.18; }
+  .arc .sun-dot { fill: var(--sun); }
+  .arc text { fill: var(--dim); font: 8px var(--text); }
+  .arc .cap { fill: var(--ink); font-size: 9px; }
+
+  /* ---------- Trains ---------- */
+  .trains { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 0; flex: 1; }
+  .dir { min-width: 0; }
+  .dir h3 { margin: 0 0 4px; font-size: 0.75rem; font-weight: 500; color: var(--faint); }
+  .dir ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .dir li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 10px; }
+  .tt { font: 300 1.05rem/1.3 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .td { font-size: 0.8125rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .td em { font-style: normal; color: var(--now); margin-left: 4px; }
+  .tin { font-size: 0.75rem; color: var(--accent); white-space: nowrap; }
+  .dir .none { display: block; font-size: 0.8125rem; color: var(--faint); }
+
+  /* ---------- Sites ---------- */
+  .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
+  .tab {
+    height: 28px; padding: 0 12px; border: 0; border-radius: 999px;
+    background: none; color: var(--dim); cursor: pointer; font-size: 0.8125rem; white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); background: rgba(var(--ink-rgb), 0.08); }
+  .tab.drop { color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tiles {
+    list-style: none; margin: 0 -8px; padding: 0; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); grid-auto-rows: max-content; gap: 2px;
+  }
+  .tile { position: relative; }
+  .tile a, .tile .add {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    width: 100%; padding: 8px 4px 6px; border-radius: 14px;
+    color: var(--ink); text-decoration: none; font-size: 0.8125rem; text-align: center;
+  }
+  .tile a:hover { background: var(--hover); }
+  .ficon { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(var(--ink-rgb), 0.07); overflow: hidden; flex: none; }
+  [data-theme="light"] .ficon { background: #FFFFFF; box-shadow: 0 0 0 1px var(--line); }
+  .ficon img { width: 24px; height: 24px; }
+  .ficon b { color: var(--accent); font-weight: 600; font-size: 1.05rem; }
+  .tname { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tile .tools { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; }
+  .tile .tools button {
+    width: 24px; height: 24px; border: 0; border-radius: 8px;
+    background: var(--pane-solid); color: var(--dim); cursor: pointer; display: grid; place-items: center;
+    box-shadow: 0 0 0 1px var(--line);
+  }
+  .tile .tools svg { width: 14px; height: 14px; }
+  .tile .tools button:hover { color: var(--ink); }
+  .tile .tools .remove:hover { color: var(--now); }
+  .tiles.editing .tile a { cursor: grab; box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .tile.dragging { opacity: 0.35; }
+  .tile .add { background: none; border: 1px dashed var(--line-strong); color: var(--dim); cursor: pointer; }
+  .tile .add:hover { color: var(--accent); border-color: var(--accent); }
+  .tile .add .ficon { background: none; }
+
+  /* ---------- Calendar ---------- */
+  .month { color: var(--ink) !important; font: 300 1.35rem/1 var(--display) !important; letter-spacing: -0.01em; }
+  .month small { font-size: 0.6em; color: var(--dim); margin-left: 6px; }
+  .days { flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, 1fr); grid-template-rows: auto; grid-auto-rows: 1fr; text-align: center; font-variant-numeric: tabular-nums; }
+  .days .dow { color: var(--faint); font-size: 0.75rem; padding-bottom: 4px; }
+  .days a {
+    display: grid; place-items: center; align-self: center; justify-self: center;
+    width: min(32px, 100%); aspect-ratio: 1; border-radius: 50%;
+    color: var(--ink); text-decoration: none; font-size: 0.875rem;
+  }
+  .days a:hover { background: rgba(var(--accent-rgb), 0.14); }
+  .days a.out { color: var(--faint); }
+  .days a.today { background: var(--now); color: var(--on-accent); font-weight: 600; }
+  .today-card { height: 100%; display: flex; flex-direction: column; justify-content: center; color: var(--ink); text-decoration: none; }
+  .tc-wd { color: var(--now); font-weight: 500; font-size: 0.875rem; }
+  .tc-day { font: 100 min(52cqh, 34cqi)/0.9 var(--display); letter-spacing: -0.03em; }
+  .tc-mo { color: var(--dim); font-size: 0.8125rem; }
+
+  /* ---------- Notes ---------- */
+  .notes-area {
+    flex: 1; min-height: 0; width: 100%; resize: none; border: 0; outline: none; padding: 0;
+    background: none; color: var(--ink); line-height: 1.6; font-size: 0.9375rem;
+  }
+  .notes-area::placeholder { color: var(--faint); }
+
+  /* ---------- Tasks ---------- */
+  .task-input {
+    width: 100%; height: 36px; flex: none; padding: 0 12px; border-radius: 10px;
+    border: 1px solid var(--line-strong); background: var(--field); outline: none; font-size: 0.875rem;
+  }
+  .task-input:focus { border-color: var(--accent); }
+  .task-input::placeholder { color: var(--faint); }
+  .task-list { list-style: none; margin: 6px -4px 0; padding: 0; overflow-y: auto; min-height: 0; flex: 1; scrollbar-width: thin; }
+  .task-list li { display: flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 8px; }
+  .task-list li:hover { background: var(--hover); }
+  .task-list label { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 0; cursor: pointer; font-size: 0.875rem; }
+  .task-list label span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .task-list input[type="checkbox"] {
+    appearance: none; width: 18px; height: 18px; flex: none; margin: 0; border-radius: 6px;
+    box-shadow: inset 0 0 0 1.5px var(--line-strong); cursor: pointer; display: grid; place-items: center;
+  }
+  .task-list input[type="checkbox"]:checked { background: var(--accent); box-shadow: none; }
+  .task-list input[type="checkbox"]:checked::after { content: ""; width: 9px; height: 5px; border: solid var(--on-accent); border-width: 0 0 2px 2px; transform: translateY(-1px) rotate(-45deg); }
+  .task-list li.done span { color: var(--faint); text-decoration: line-through; }
+  .task-list .x { width: 26px; height: 26px; border: 0; border-radius: 8px; background: none; color: var(--faint); cursor: pointer; display: grid; place-items: center; opacity: 0; }
+  .task-list li:hover .x, .task-list .x:focus-visible { opacity: 1; }
+  .task-list .x:hover { color: var(--now); }
+  .task-list .x svg { width: 14px; height: 14px; }
+
+  /* ---------- Focus timer ---------- */
+  .focus { height: 100%; display: flex; align-items: center; gap: 18px; }
+  .ring { position: relative; height: min(100%, 46cqi); aspect-ratio: 1; flex: none; display: grid; place-items: center; }
+  .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--line-strong); stroke-width: 3; }
+  .ring-bar { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.9s linear; }
+  .ft { position: relative; font: 200 min(22cqh, 12cqi)/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .focus-side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .fmode { font-size: 0.8125rem; color: var(--dim); }
+  .fbtns { display: flex; gap: 4px; }
+  .modes { display: flex; gap: 2px; }
+  .modes button { height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: none; color: var(--dim); font-size: 0.8125rem; cursor: pointer; }
+  .modes button[aria-checked="true"] { color: var(--ink); background: rgba(var(--ink-rgb), 0.08); }
+
+  /* ---------- Settings sheet ---------- */
+  .sheet {
+    position: fixed; inset: 0 0 0 auto; margin: 0;
+    width: min(460px, 100vw); height: 100dvh; max-height: 100dvh; max-width: 100vw;
+    padding: 0; border: 0; border-left: 1px solid var(--line-strong); border-radius: 0;
+    background: var(--pane-solid); color: var(--ink);
+  }
+  .sheet[open] { animation: sheet-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  @keyframes sheet-in { from { transform: translateX(28px); opacity: 0; } }
+  .sheet::backdrop, .modal::backdrop { background: rgba(0, 0, 0, 0.5); }
+  [data-theme="light"] .sheet::backdrop, [data-theme="light"] .modal::backdrop { background: rgba(13, 21, 36, 0.22); }
+  .sheet-head {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 24px 16px; background: var(--pane-solid); border-bottom: 1px solid var(--line);
+  }
+  .sheet-head h2 { margin: 0; font: 300 1.75rem/1 var(--display); letter-spacing: -0.01em; }
+  .sheet-nav { display: flex; gap: 2px; padding: 10px 20px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); }
+  .sheet-body { padding: 0 24px 48px; }
+  .sheet section { padding: 22px 0; border-bottom: 1px solid var(--line); scroll-margin-top: 120px; }
+  .sheet section:last-child { border-bottom: 0; }
+  .sheet h3 { margin: 0 0 14px; font-size: 1rem; font-weight: 600; }
+  .sheet .hint { margin: -4px 0 14px; font-size: 0.8125rem; color: var(--dim); }
+  .fieldset { margin-bottom: 18px; }
+  .label { display: block; font-size: 0.8125rem; color: var(--dim); margin-bottom: 8px; }
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 12px; background: var(--field); box-shadow: inset 0 0 0 1px var(--line); }
+  .seg label { position: relative; }
+  .seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .seg span { display: block; padding: 6px 14px; border-radius: 9px; font-size: 0.875rem; color: var(--dim); }
+  .seg input:checked + span { color: var(--ink); background: rgba(var(--ink-rgb), 0.1); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .seg input:focus-visible + span { outline: 2px solid var(--accent); }
+  .sched { margin: -4px 0 18px; padding: 14px; border-radius: 14px; background: var(--field); }
+  .sched[hidden] { display: none; }
+  .times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .times label { font-size: 0.8125rem; color: var(--dim); }
+  .times[hidden] { display: none; }
+  .sched .hint { margin: 10px 0 0; }
+  .input {
+    display: block; width: 100%; height: 40px; margin-top: 6px; padding: 0 12px;
+    border-radius: 10px; border: 1px solid var(--line-strong); background: var(--field);
+    color: var(--ink); outline: none; font-size: 0.9375rem;
+  }
+  .input:focus { border-color: var(--accent); }
+  .swatches { display: flex; gap: 16px; }
+  .swatches label { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--dim); cursor: pointer; }
+  .swatches input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .swatches i { width: 30px; height: 30px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px var(--pane-solid), 0 0 0 4px transparent; }
+  .swatches input:checked + i { box-shadow: 0 0 0 3px var(--pane-solid), 0 0 0 5px var(--c); }
+  .swatches input:focus-visible + i { outline: 2px solid var(--ink); outline-offset: 6px; }
+  .sw-teal { --c: #79E0D4; } .sw-violet { --c: #A99BFF; } .sw-amber { --c: #F2B872; } .sw-rose { --c: #F07A93; }
+  .sw-green { --c: #86EFAC; } .sw-silver { --c: #C9D3E3; }
+  [data-theme="light"] .sw-teal { --c: #0B8276; } [data-theme="light"] .sw-violet { --c: #5847D2; }
+  [data-theme="light"] .sw-amber { --c: #A35F0A; } [data-theme="light"] .sw-rose { --c: #C8325A; }
+  [data-theme="light"] .sw-green { --c: #13804A; } [data-theme="light"] .sw-silver { --c: #3F4A5C; }
+  .swatches { flex-wrap: wrap; }
+  .sets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .sets label { position: relative; display: flex; flex-direction: column; gap: 6px; font-size: 0.8125rem; color: var(--dim); cursor: pointer; }
+  .sets input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+  .sets i { display: block; aspect-ratio: 4 / 3; border-radius: 12px; background: var(--p); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .sets input:checked + i { box-shadow: 0 0 0 2px var(--pane-solid), 0 0 0 4px var(--accent); }
+  .sets input:checked ~ span { color: var(--ink); }
+  .sets input:focus-visible + i { outline: 2px solid var(--ink); outline-offset: 5px; }
+  .pv-space { --p: radial-gradient(circle at 28% 38%, #79E0D4 0 1.5px, transparent 2px), radial-gradient(circle at 72% 64%, #E8EEF7 0 1px, transparent 1.5px), radial-gradient(circle at 56% 24%, #E8EEF7 0 1px, transparent 1.5px), radial-gradient(circle at 20% 78%, #E8EEF7 0 0.8px, transparent 1.3px), #000; }
+  .pv-nebula { --p: radial-gradient(70% 60% at 80% 15%, rgba(150, 100, 255, 0.6), transparent 70%), radial-gradient(60% 50% at 10% 95%, rgba(240, 100, 170, 0.45), transparent 70%), #0B0618; }
+  .pv-aurora { --p: radial-gradient(100% 45% at 50% 0%, rgba(70, 240, 170, 0.55), transparent 70%), radial-gradient(50% 40% at 90% 5%, rgba(80, 150, 255, 0.45), transparent 70%), #03080F; }
+  .pv-lunar { --p: radial-gradient(90% 70% at 50% 120%, rgba(220, 225, 235, 0.4), transparent 70%), #0B0C0E; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; cursor: pointer; }
+  .row strong { display: block; font-weight: 500; }
+  .row small { display: block; color: var(--dim); font-size: 0.8125rem; }
+  .switch {
+    appearance: none; width: 40px; height: 24px; flex: none; margin: 0; border-radius: 999px;
+    background: var(--line-strong); position: relative; cursor: pointer; transition: background 0.2s;
+  }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); transition: transform 0.2s; }
+  .switch:checked { background: var(--accent); }
+  .switch:checked::after { transform: translateX(16px); background: var(--on-accent); }
+  .wlist { list-style: none; margin: 0 0 14px; padding: 0; }
+  .wlist li { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+  .wlist strong { display: block; font-weight: 500; }
+  .wlist small { display: block; color: var(--dim); font-size: 0.8125rem; }
+  .wlist select { height: 32px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--field); color: var(--ink); }
+  .wlist li.off strong, .wlist li.off select { opacity: 0.5; }
+  .loc-now { margin: 0 0 12px; }
+  .loc-form { display: flex; gap: 8px; }
+  .loc-form .input { margin-top: 0; }
+  .loc-results { list-style: none; margin: 8px 0; padding: 0; }
+  .loc-results button { width: 100%; text-align: left; padding: 10px 12px; border: 0; border-radius: 10px; background: none; color: var(--ink); cursor: pointer; }
+  .loc-results button:hover { background: var(--hover); }
+  .loc-results small { color: var(--dim); margin-left: 4px; }
+  .loc-results .hint { margin: 6px 0; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* ---------- Small dialogs ---------- */
+  .modal { border: 1px solid var(--line-strong); border-radius: 20px; background: var(--pane-solid); color: var(--ink); padding: 24px; width: min(400px, calc(100vw - 32px)); }
+  .modal h2 { margin: 0 0 16px; font-size: 1.1rem; font-weight: 600; }
+  .modal label { display: block; font-size: 0.8125rem; color: var(--dim); margin-bottom: 14px; }
+  .modal label[hidden] { display: none; }
+  .modal p { margin: 0 0 18px; color: var(--dim); }
+  .modal p[hidden] { display: none; }
+  .modal .error { color: var(--now); font-size: 0.85rem; min-height: 1.2em; margin: -4px 0 10px; }
+  /* The confirm button comes first in the markup so Enter picks it; this puts it on the right */
+  .actions { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 8px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; z-index: 30;
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 8px 8px 18px; border-radius: 999px; min-height: 44px;
+    background: var(--pane-solid); color: var(--ink); font-size: 0.875rem;
+    box-shadow: 0 0 0 1px var(--line-strong), 0 20px 50px -20px rgba(0, 0, 0, 0.7);
+    transform: translate(-50%, 16px); opacity: 0; pointer-events: none;
+    transition: transform 0.25s, opacity 0.25s;
+  }
+  .toast:not(:has(button)) { padding-right: 18px; }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
+  .arranging .toast { bottom: 84px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1000px) {
+    :root { --cols: 2; }
+    .w-w { grid-column: span 2; }
+  }
+  @media (max-width: 620px) {
+    :root { --cols: 1; --row: 150px; }
+    .w-m, .w-l, .w-w { grid-column: span 1; }
+    .pill span { display: none; }
+    .pill { padding: 0 10px; }
+    .arrange-bar .bar-text { display: none; }
+    .arrange-bar { padding-left: 8px; }
   }
   @media (prefers-reduced-motion: reduce) {
-    * { transition: none !important; }
+    *, *::before { transition: none !important; animation: none !important; }
   }
 </style>
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
 
-<main class="shell">
-  <header class="hero">
-    <button class="time" id="clock" title="Switch between 12 and 24 hour">
-      <span id="hm">--:--</span>
-      <span class="sub"><span class="sec" id="sec">--</span><span id="ampm"></span></span>
-    </button>
-    <p class="greet"><span id="greeting">Hello, Josh.</span> <span class="date" id="date"></span></p>
-    <p class="weather" id="weather"></p>
-  </header>
+<header class="topbar">
+  <button class="pill" id="arrangeBtn" type="button" aria-pressed="false" aria-label="Arrange widgets"><span data-ico="grid"></span><span>Arrange</span></button>
+  <button class="pill" id="settingsBtn" type="button" aria-label="Settings"><span data-ico="gear"></span><span>Settings</span></button>
+</header>
 
-  <form class="search" id="search" role="search">
-    <div class="engines" id="engines">
-      <button type="button" data-engine="google">Google</button>
-      <button type="button" data-engine="duckduckgo">DuckDuckGo</button>
-      <button type="button" data-engine="chatgpt">ChatGPT</button>
-      <button type="button" data-engine="claude">Claude</button>
-    </div>
-    <input id="query" type="search" autocomplete="off" placeholder="Search the web" aria-label="Search">
-  </form>
+<div class="board-wrap">
+  <main class="board" id="board"></main>
+</div>
 
-  <section class="sites" id="sites" aria-label="Your sites">
-    <div class="sites-bar">
-      <div role="tablist" id="tabs" style="display:flex;gap:4px;flex-wrap:wrap"></div>
-      <div class="bar-actions">
-        <button class="quiet edit-only" id="newGroup" type="button">New group</button>
-        <button class="quiet edit-only" id="renameGroup" type="button">Rename group</button>
-        <button class="quiet edit-only" id="deleteGroup" type="button">Delete group</button>
-        <button class="quiet edit-only" id="backup" type="button">Back up</button>
-        <button class="quiet edit-only" id="restore" type="button">Restore</button>
-        <button class="quiet" id="editToggle" type="button" aria-pressed="false">Edit sites</button>
-      </div>
-    </div>
-    <ul class="grid" id="grid"></ul>
-    <input type="file" id="restoreFile" accept="application/json" hidden>
-  </section>
+<div class="arrange-bar" id="arrangeBar" hidden>
+  <span class="bar-text">Drag widgets to move them. Pick a size on each one.</span>
+  <button class="btn quiet sm" id="addWidgets" type="button">Add widgets</button>
+  <button class="btn primary sm" id="doneArranging" type="button">Done</button>
+</div>
 
-  <aside class="cal" aria-label="Calendar">
-    <div class="month-head">
-      <h2 id="monthTitle"></h2>
-      <div class="month-nav">
-        <button class="quiet" id="prevMonth" type="button" aria-label="Previous month">&lsaquo;</button>
-        <button class="quiet" id="thisMonth" type="button">Today</button>
-        <button class="quiet" id="nextMonth" type="button" aria-label="Next month">&rsaquo;</button>
-      </div>
-    </div>
-    <div class="days" id="days"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <section class="sky-panel" aria-labelledby="skyTitle">
-      <h3 id="skyTitle">Tonight's sky</h3>
-      <div class="moon-row">
-        <svg class="moon" viewBox="-32 -32 64 64" aria-hidden="true">
-          <circle r="30" fill="#141A26"/>
-          <path id="moonLit" fill="#E8EEF7"/>
-        </svg>
-        <div>
-          <p class="moon-name" id="moonName"></p>
-          <p class="dim" id="moonInfo"></p>
+<dialog class="sheet" id="settings" aria-labelledby="settingsTitle">
+  <div class="sheet-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button class="btn quiet ic" id="closeSettings" type="button" aria-label="Close settings"><span data-ico="x"></span></button>
+  </div>
+  <nav class="sheet-nav" aria-label="Settings sections">
+    <a class="mini" href="#set-look">Appearance</a>
+    <a class="mini" href="#set-widgets">Widgets</a>
+    <a class="mini" href="#set-place">Location</a>
+    <a class="mini" href="#set-clock">Clock</a>
+    <a class="mini" href="#set-data">Backup</a>
+  </nav>
+  <div class="sheet-body">
+    <section id="set-look">
+      <h3>Appearance</h3>
+      <div class="fieldset">
+        <span class="label">Theme set</span>
+        <div class="sets" role="radiogroup" aria-label="Theme set">
+          <label><input type="radio" name="set" value="space"><i class="pv-space"></i><span>Deep space</span></label>
+          <label><input type="radio" name="set" value="nebula"><i class="pv-nebula"></i><span>Nebula</span></label>
+          <label><input type="radio" name="set" value="aurora"><i class="pv-aurora"></i><span>Aurora</span></label>
+          <label><input type="radio" name="set" value="lunar"><i class="pv-lunar"></i><span>Lunar</span></label>
         </div>
       </div>
-      <div class="sun-row">
-        <div><span class="dim">Sunrise</span><strong id="sunrise">--</strong></div>
-        <div><span class="dim">Sunset</span><strong id="sunset">--</strong></div>
-        <div><span class="dim">Daylight</span><strong id="daylight">--</strong></div>
+      <div class="fieldset">
+        <span class="label">Mode</span>
+        <div class="seg" role="radiogroup" aria-label="Theme">
+          <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+          <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+          <label><input type="radio" name="theme" value="system"><span>Match Windows</span></label>
+          <label><input type="radio" name="theme" value="schedule"><span>Schedule</span></label>
+        </div>
       </div>
-      <ol class="hours" id="hours" aria-label="Next 8 hours"></ol>
+      <div class="sched" id="schedBox">
+        <div class="seg" role="radiogroup" aria-label="Schedule">
+          <label><input type="radio" name="schedule" value="sun"><span>Sunrise to sunset</span></label>
+          <label><input type="radio" name="schedule" value="times"><span>Set times</span></label>
+        </div>
+        <div class="times" id="schedTimes">
+          <label>Light from<input class="input" type="time" id="lightAt"></label>
+          <label>Dark from<input class="input" type="time" id="darkAt"></label>
+        </div>
+        <p class="hint" id="schedHint"></p>
+      </div>
+      <div class="fieldset">
+        <span class="label">Accent</span>
+        <div class="swatches" role="radiogroup" aria-label="Accent color">
+          <label><input type="radio" name="accent" value="teal"><i class="sw-teal"></i>Teal</label>
+          <label><input type="radio" name="accent" value="violet"><i class="sw-violet"></i>Violet</label>
+          <label><input type="radio" name="accent" value="green"><i class="sw-green"></i>Green</label>
+          <label><input type="radio" name="accent" value="amber"><i class="sw-amber"></i>Amber</label>
+          <label><input type="radio" name="accent" value="rose"><i class="sw-rose"></i>Rose</label>
+          <label><input type="radio" name="accent" value="silver"><i class="sw-silver"></i>Silver</label>
+        </div>
+      </div>
+      <label class="row"><span><strong>Drifting dust</strong><small>The slow-moving background</small></span><input type="checkbox" class="switch" id="dust"></label>
     </section>
-  </aside>
-</main>
 
-<dialog id="siteDialog">
+    <section id="set-widgets">
+      <h3>Widgets</h3>
+      <p class="hint">Turn widgets on or off and pick their size. To move them, close this and press Arrange.</p>
+      <ul class="wlist" id="widgetList"></ul>
+      <button class="btn quiet" id="resetLayout" type="button">Reset layout</button>
+    </section>
+
+    <section id="set-place">
+      <h3>Weather and location</h3>
+      <p class="loc-now">Showing weather for <strong id="locName"></strong>.</p>
+      <form class="loc-form" id="locForm">
+        <input class="input" id="locQuery" type="search" placeholder="Search for a city" aria-label="Search for a city" autocomplete="off">
+        <button class="btn" type="submit">Search</button>
+      </form>
+      <ul class="loc-results" id="locResults"></ul>
+      <button class="btn quiet" id="locHere" type="button"><span data-ico="pin"></span>Use my current location</button>
+      <div class="fieldset" style="margin-top:18px">
+        <span class="label">Temperature</span>
+        <div class="seg" role="radiogroup" aria-label="Temperature units">
+          <label><input type="radio" name="units" value="f"><span>°F</span></label>
+          <label><input type="radio" name="units" value="c"><span>°C</span></label>
+        </div>
+      </div>
+      <label class="label" for="station">Train station</label>
+      <input class="input" id="station" placeholder="Lansdowne" autocomplete="off">
+      <p class="hint" style="margin-top:8px">A SEPTA Regional Rail station, spelled the way SEPTA spells it, like Lansdowne or Suburban Station.</p>
+    </section>
+
+    <section id="set-clock">
+      <h3>Clock and greeting</h3>
+      <label class="label" for="name">Name in the greeting</label>
+      <input class="input" id="name" maxlength="30" autocomplete="off">
+      <div style="height:10px"></div>
+      <label class="row"><span><strong>24-hour clock</strong></span><input type="checkbox" class="switch" id="use24"></label>
+      <label class="row"><span><strong>Show seconds</strong></span><input type="checkbox" class="switch" id="seconds"></label>
+    </section>
+
+    <section id="set-data">
+      <h3>Backup</h3>
+      <p class="hint">Everything is saved in this browser only. Back up to keep a copy or to move your setup to another browser.</p>
+      <div class="btns">
+        <button class="btn" id="backupAll" type="button">Back up</button>
+        <button class="btn" id="restoreAll" type="button">Restore</button>
+      </div>
+      <input type="file" id="restoreFile" accept="application/json" hidden>
+    </section>
+  </div>
+</dialog>
+
+<dialog class="modal" id="siteDialog">
   <form method="dialog" id="siteForm">
     <h2 id="siteDialogTitle">Add a site</h2>
-    <label>Name<input id="siteName" required maxlength="40" placeholder="YouTube"></label>
-    <label>Address<input id="siteUrl" required placeholder="youtube.com"></label>
-    <label>Group<select id="siteGroup"></select></label>
+    <label>Name<input class="input" id="siteName" maxlength="40" placeholder="YouTube"></label>
+    <label>Address<input class="input" id="siteUrl" placeholder="youtube.com"></label>
+    <label>Group<select class="input" id="siteGroup"></select></label>
     <p class="error" id="siteError"></p>
-    <div class="dialog-actions">
-      <button class="quiet" value="cancel" formnovalidate>Cancel</button>
-      <button class="primary" id="siteSave" value="save">Add site</button>
+    <div class="actions">
+      <button class="btn primary" id="siteSave" value="save">Add site</button>
+      <button class="btn quiet" value="cancel" formnovalidate>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal" id="ask">
+  <form method="dialog">
+    <h2></h2>
+    <label><span class="ask-label"></span><input class="input" maxlength="30" autocomplete="off"></label>
+    <p class="ask-text"></p>
+    <div class="actions">
+      <button class="btn primary" value="ok">Save</button>
+      <button class="btn quiet" value="cancel" formnovalidate>Cancel</button>
     </div>
   </form>
 </dialog>
 
 <script>
-// ---------- Storage helpers (fail quietly in private windows) ----------
+'use strict';
+// ---------- Helpers ----------
 const store = {
   get(key, fallback) {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
@@ -440,79 +852,116 @@ const store = {
 };
 const $ = (id) => document.getElementById(id);
 const uid = () => Math.random().toString(36).slice(2, 9);
+const pad = (n) => String(n).padStart(2, '0');
+const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const setAll = (key, value) => document.querySelectorAll(`[data-b="${key}"]`).forEach((e) => { if (e.textContent !== value) e.textContent = value; });
+const dur = (ms) => { const m = Math.max(0, Math.round(ms / 60000)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h ${m % 60}m`; };
+const BASE_TITLE = document.title;
 
-// ---------- Drifting dust sky ----------
-(function sky() {
+const ICONS = {
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="17" height="7" rx="1.5"/>',
+  grip: '<g fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></g>',
+  eyeoff: '<path d="M3 3l18 18M10.6 5.1A9.9 9.9 0 0 1 12 5c5 0 8.5 4.5 9.5 7a13 13 0 0 1-2.4 3.5M6.6 6.6C4.4 8 3 10.2 2.5 12c1 2.5 4.5 7 9.5 7 1.7 0 3.2-.5 4.5-1.3M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
+  pencil: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4z"/>',
+  left: '<path d="M15 6l-6 6 6 6"/>',
+  right: '<path d="M9 6l6 6-6 6"/>',
+  reset: '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>'
+};
+const ico = (name) => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+document.querySelectorAll('[data-ico]').forEach((e) => { e.outerHTML = ico(e.dataset.ico); });
+
+// ---------- Settings ----------
+const DEFAULT_SETTINGS = {
+  name: 'Josh',
+  set: 'space',           // space, nebula, aurora or lunar
+  theme: 'dark',          // dark, light, system or schedule
+  schedule: 'sun',        // sun (sunrise to sunset) or times
+  lightAt: '07:00',
+  darkAt: '19:00',
+  accent: 'teal',
+  dust: true,
+  use24: false,
+  seconds: true,
+  units: 'f',
+  engine: 'google',
+  location: { name: 'Lansdowne, Pennsylvania', lat: 39.9387, lon: -75.2716 },
+  station: 'Lansdowne'
+};
+const savedSettings = store.get('sp.settings', null);
+let settings = { ...DEFAULT_SETTINGS, ...(savedSettings || {}) };
+if (!savedSettings) {
+  // Carry over choices made on the first version of the page
+  settings.use24 = store.get('np.24h', false);
+  settings.engine = store.get('np.engine', 'google');
+}
+const saveSettings = () => store.set('sp.settings', settings);
+const shortPlace = () => settings.location.name.split(',')[0];
+
+// ---------- Drifting dust background ----------
+const sky = (() => {
   const canvas = $('sky');
   const ctx = canvas.getContext('2d');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let specks = [], dust = [], w, h, dpr;
+  let specks = [], dust = [], w = 0, h = 0, running = false, raf = 0, last = 0;
+  let palette = { ink: '232,238,247', accent: '121,224,212', now: '240,122,147', alpha: 1 };
 
-  // Mostly starlight, a little teal, a rare touch of rose
-  const pickColor = () => {
-    const t = Math.random();
-    return t < 0.12 ? '121,224,212' : t < 0.16 ? '240,122,147' : '232,238,247';
-  };
+  // Mostly ink, a little accent, a rare touch of the "now" color
+  const pick = () => { const t = Math.random(); return t < 0.12 ? 'accent' : t < 0.16 ? 'now' : 'ink'; };
 
   function seed() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     w = innerWidth; h = innerHeight;
     canvas.width = w * dpr; canvas.height = h * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
     // Far layer: tiny specks that never move, for depth
     specks = Array.from({ length: Math.round((w * h) / 4500) }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      size: 0.3 + Math.random() * 0.6,
-      alpha: 0.12 + Math.random() * 0.25
+      x: Math.random() * w, y: Math.random() * h,
+      size: 0.3 + Math.random() * 0.6, alpha: 0.12 + Math.random() * 0.25
     }));
-
-    // Near layer: dust that floats up slowly; closer grains (higher z) are bigger, softer and faster
+    // Near layer: dust that floats up slowly; closer grains (higher z) are bigger, brighter and faster
     dust = Array.from({ length: Math.round((w * h) / 9000) }, () => {
       const z = Math.random() ** 1.6;
       return {
-        x: Math.random() * w,
-        y: Math.random() * h,
-        z,
-        size: 0.6 + z * 2.2,
-        alpha: 0.25 + z * 0.55,
-        speed: 3 + z * 12,                    // pixels per second
-        sway: 6 + Math.random() * 14,         // how far it wanders sideways
-        phase: Math.random() * Math.PI * 2,
-        color: pickColor()
+        x: Math.random() * w, y: Math.random() * h, z,
+        size: 0.6 + z * 2.2, alpha: 0.25 + z * 0.55,
+        speed: 3 + z * 12,                   // pixels per second
+        sway: 6 + Math.random() * 14,        // how far it wanders sideways
+        phase: Math.random() * Math.PI * 2, color: pick()
       };
     });
   }
 
   function draw(t) {
     ctx.clearRect(0, 0, w, h);
+    const k = palette.alpha;
     for (const s of specks) {
-      ctx.fillStyle = `rgba(232,238,247,${s.alpha})`;
+      ctx.fillStyle = `rgba(${palette.ink},${s.alpha * k})`;
       ctx.fillRect(s.x, s.y, s.size, s.size);
     }
     const secs = t / 1000;
     for (const d of dust) {
       const x = d.x + Math.sin(secs * 0.15 + d.phase) * d.sway;
-      const y = d.y;
+      const rgb = palette[d.color];
       if (d.z > 0.45) {
-        // a soft halo on the nearest grains
-        ctx.fillStyle = `rgba(${d.color},${d.alpha * 0.12})`;
-        ctx.beginPath();
-        ctx.arc(x, y, d.size * 3, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle = `rgba(${rgb},${d.alpha * 0.12 * k})`;   // a soft halo on the nearest grains
+        ctx.beginPath(); ctx.arc(x, d.y, d.size * 3, 0, Math.PI * 2); ctx.fill();
       }
-      ctx.fillStyle = `rgba(${d.color},${d.alpha})`;
-      ctx.beginPath();
-      ctx.arc(x, y, d.size, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = `rgba(${rgb},${d.alpha * k})`;
+      ctx.beginPath(); ctx.arc(x, d.y, d.size, 0, Math.PI * 2); ctx.fill();
     }
   }
 
-  let last = 0;
   function loop(t) {
+    if (!running) return;
     const dt = Math.min((t - last) / 1000, 0.1);
-    if (t - last > 33) {                     // about 30 frames a second
+    if (t - last > 33) {                    // about 30 frames a second
       for (const d of dust) {
         d.y -= d.speed * dt;
         if (d.y < -10) { d.y = h + 10; d.x = Math.random() * w; }
@@ -520,31 +969,56 @@ const uid = () => Math.random().toString(36).slice(2, 9);
       draw(t);
       last = t;
     }
-    requestAnimationFrame(loop);
+    raf = requestAnimationFrame(loop);
   }
+
   seed();
   addEventListener('resize', () => { seed(); draw(performance.now()); });
-  if (still) draw(0); else requestAnimationFrame((t) => { last = t; loop(t); });
+  return {
+    setPalette(p) { palette = p; draw(performance.now()); },
+    setEnabled(on) {
+      canvas.hidden = !on;
+      if (!on) { running = false; cancelAnimationFrame(raf); return; }
+      if (still) { draw(0); return; }
+      if (!running) { running = true; raf = requestAnimationFrame((t) => { last = t; loop(t); }); }
+    }
+  };
 })();
 
-// ---------- Clock, greeting, date ----------
-let use24 = store.get('np.24h', false);
-function tick() {
-  const now = new Date();
-  const h = now.getHours();
-  const m = String(now.getMinutes()).padStart(2, '0');
-  $('hm').textContent = use24 ? `${String(h).padStart(2, '0')}:${m}` : `${((h + 11) % 12) + 1}:${m}`;
-  $('sec').textContent = String(now.getSeconds()).padStart(2, '0');
-  $('ampm').textContent = use24 ? '' : (h < 12 ? 'am' : 'pm');
-  $('greeting').textContent =
-    h < 5 ? 'Up late, Josh.' : h < 12 ? 'Good morning, Josh.' : h < 17 ? 'Good afternoon, Josh.' : 'Good evening, Josh.';
-  $('date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+// ---------- Theme ----------
+function applyTheme(animate) {
+  const root = document.documentElement;
+  const theme = pickTheme(settings, wxData());
+  root.dataset.accent = settings.accent;
+  root.dataset.set = settings.set;
+  if (root.dataset.theme !== theme) {
+    if (animate) { root.classList.add('theming'); setTimeout(() => root.classList.remove('theming'), 700); }
+    root.dataset.theme = theme;
+  }
+  const cs = getComputedStyle(root);
+  sky.setPalette({
+    ink: cs.getPropertyValue('--ink-rgb').trim(),
+    accent: cs.getPropertyValue('--accent-rgb').trim(),
+    now: cs.getPropertyValue('--now-rgb').trim(),
+    alpha: parseFloat(cs.getPropertyValue('--dust-alpha')) || 1
+  });
 }
-$('clock').addEventListener('click', () => { use24 = !use24; store.set('np.24h', use24); tick(); });
-tick();
-setInterval(tick, 1000);
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => applyTheme(true));
 
-// ---------- Weather for Lansdowne (Open-Meteo, no key needed) ----------
+// ---------- Time formatting ----------
+function fmtTime(ms, timeZone) {
+  return new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: !settings.use24, timeZone }).toLowerCase();
+}
+function hourLabel(ms, timeZone) {
+  const s = new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', hour12: !settings.use24, timeZone });
+  return s.replace(/\s?([ap])\.?m\.?/i, (m, p) => p.toLowerCase());
+}
+function greeting(h) {
+  const who = settings.name.trim() ? `, ${settings.name.trim()}` : '';
+  return (h < 5 ? 'Up late' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') + who + '.';
+}
+
+// ---------- Weather (Open-Meteo, no key needed) ----------
 const SKY_WORDS = {
   0: 'clear', 1: 'mostly clear', 2: 'partly cloudy', 3: 'overcast', 45: 'foggy', 48: 'foggy',
   51: 'drizzling', 53: 'drizzling', 55: 'drizzling', 56: 'freezing drizzle', 57: 'freezing drizzle',
@@ -553,56 +1027,128 @@ const SKY_WORDS = {
   80: 'rain showers', 81: 'rain showers', 82: 'heavy showers', 85: 'snow showers', 86: 'snow showers',
   95: 'thunderstorms', 96: 'thunderstorms with hail', 99: 'thunderstorms with hail'
 };
-async function weather() {
-  const url = 'https://api.open-meteo.com/v1/forecast?latitude=39.9387&longitude=-75.2716'
-    + '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset'
-    + '&hourly=temperature_2m,precipitation_probability'
-    + '&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=2';
+const skyWords = (code) => SKY_WORDS[code] ?? 'mixed skies';
+
+const CLOUD = 'M6.5 18h11a3.5 3.5 0 0 0 .4-6.98 5.5 5.5 0 0 0-10.6-1.27A4.13 4.13 0 0 0 6.5 18z';
+const CLOUD_HIGH = 'M6.5 15h11a3.5 3.5 0 0 0 .4-6.98 5.5 5.5 0 0 0-10.6-1.27A4.13 4.13 0 0 0 6.5 15z';
+const WX_GLYPHS = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  moon: '<path d="M19.5 14.2A7.5 7.5 0 0 1 9.8 4.5a7.5 7.5 0 1 0 9.7 9.7z"/>',
+  partlyDay: '<path d="M8 2.5v1.3M2.5 8h1.3M4.1 4.1l.9.9M11.9 4.1l-.9.9M4.6 11.2A3.6 3.6 0 0 1 11.4 6.7"/><path d="M9 20h8.5a3 3 0 0 0 .3-5.98 4.5 4.5 0 0 0-8.6-1A3.5 3.5 0 0 0 9 20z"/>',
+  partlyNight: '<path d="M11 4.3A4.5 4.5 0 0 0 5 10.5"/><path d="M9 20h8.5a3 3 0 0 0 .3-5.98 4.5 4.5 0 0 0-8.6-1A3.5 3.5 0 0 0 9 20z"/>',
+  cloud: `<path d="${CLOUD}"/>`,
+  fog: '<path d="M4 8h16M6 12h12M4 16h16M8 20h8"/>',
+  rain: `<path d="${CLOUD_HIGH}"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>`,
+  snow: `<path d="${CLOUD_HIGH}"/><path d="M8 18.5h.01M12 18.5h.01M16 18.5h.01M10 21.5h.01M14 21.5h.01" stroke-width="2.4"/>`,
+  storm: `<path d="${CLOUD_HIGH}"/><path d="M12.5 15.5l-2 3.5h3l-2 3.5"/>`
+};
+function wxIcon(code, day = 1) {
+  let k = 'cloud';
+  if (code <= 1) k = day ? 'sun' : 'moon';
+  else if (code === 2) k = day ? 'partlyDay' : 'partlyNight';
+  else if (code === 45 || code === 48) k = 'fog';
+  else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) k = 'rain';
+  else if ((code >= 71 && code <= 77) || code === 85 || code === 86) k = 'snow';
+  else if (code >= 95) k = 'storm';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${WX_GLYPHS[k]}</svg>`;
+}
+
+let wx = store.get('sp.wx', null);   // { key, at, data }, kept so a new tab shows weather right away
+let wxError = '';
+const locKey = () => `${(+settings.location.lat).toFixed(3)},${(+settings.location.lon).toFixed(3)},${settings.units}`;
+const wxData = () => (wx && wx.key === locKey() ? wx.data : null);
+
+async function loadWeather(force) {
+  if (!force && wxData() && Date.now() - wx.at < 15 * 60e3) return;
+  const { lat, lon } = settings.location;
+  const metric = settings.units === 'c';
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + '&current=temperature_2m,apparent_temperature,weather_code,is_day'
+    + '&hourly=temperature_2m,precipitation_probability,weather_code,is_day'
+    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,precipitation_probability_max'
+    + `&temperature_unit=${metric ? 'celsius' : 'fahrenheit'}`
+    + '&timezone=auto&timeformat=unixtime&forecast_days=7';
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(res.status);
-    const d = await res.json();
-    const temp = Math.round(d.current.temperature_2m);
-    const words = SKY_WORDS[d.current.weather_code] ?? 'mixed skies';
-    const hi = Math.round(d.daily.temperature_2m_max[0]);
-    const lo = Math.round(d.daily.temperature_2m_min[0]);
-    $('weather').textContent = `${temp}° and ${words} in Lansdowne. High ${hi}°, low ${lo}°.`;
-    renderSun(d.daily);
-    renderHours(d.hourly);
+    wx = { key: locKey(), at: Date.now(), data: await res.json() };
+    store.set('sp.wx', wx);
+    wxError = '';
   } catch {
-    $('weather').textContent = "Weather isn't loading right now. It'll try again in 15 minutes.";
+    wxError = 'The forecast isn’t loading. It will try again in a few minutes.';
   }
+  refresh('weather'); refresh('sky'); tick(); applyTheme(true); syncScheduleHint();
 }
-weather();
-setInterval(weather, 15 * 60 * 1000);
 
-// ---------- Search ----------
-const ENGINES = {
-  google:  { url: 'https://www.google.com/search?q=', hint: 'Search the web' },
-  duckduckgo: { url: 'https://duckduckgo.com/?q=',    hint: 'Search privately with DuckDuckGo' },
-  chatgpt: { url: 'https://chatgpt.com/?q=',          hint: 'Ask ChatGPT' },
-  claude:  { url: 'https://claude.ai/new?q=',         hint: 'Ask Claude' }
-};
-let engine = store.get('np.engine', 'google');
-function showEngine() {
-  document.querySelectorAll('#engines button').forEach((b) =>
-    b.setAttribute('aria-pressed', String(b.dataset.engine === engine)));
-  $('query').placeholder = ENGINES[engine].hint;
+function wxLine() {
+  const d = wxData();
+  if (!d) return '';
+  const hi = Math.round(d.daily.temperature_2m_max[0]), lo = Math.round(d.daily.temperature_2m_min[0]);
+  return `${Math.round(d.current.temperature_2m)}° and ${skyWords(d.current.weather_code)} in ${shortPlace()}. High ${hi}°, low ${lo}°.`;
 }
-$('engines').addEventListener('click', (e) => {
-  const b = e.target.closest('button');
-  if (!b) return;
-  engine = b.dataset.engine;
-  store.set('np.engine', engine);
-  showEngine();
-  $('query').focus();
-});
-$('search').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const q = $('query').value.trim();
-  if (q) location.href = ENGINES[engine].url + encodeURIComponent(q);
-});
-showEngine();
+
+// ---------- Moon ----------
+const SYNODIC = 29.530588853;                         // days from one new moon to the next
+const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);  // a new moon used as the starting point
+function moonPhase(now = new Date()) {
+  const days = (now - KNOWN_NEW_MOON) / 864e5;
+  return ((days % SYNODIC) + SYNODIC) % SYNODIC / SYNODIC;   // 0 new, 0.5 full, back to 1
+}
+function moonName(p) {
+  if (p < 0.03 || p > 0.97) return 'New moon';
+  if (p < 0.22) return 'Waxing crescent';
+  if (p < 0.28) return 'First quarter';
+  if (p < 0.47) return 'Waxing gibbous';
+  if (p < 0.53) return 'Full moon';
+  if (p < 0.72) return 'Waning gibbous';
+  if (p < 0.78) return 'Last quarter';
+  return 'Waning crescent';
+}
+// The lit part: an outer half circle plus the curved shadow line (terminator)
+function moonPath(p, r = 30) {
+  const k = Math.cos(2 * Math.PI * p);      // 1 at new moon, -1 at full
+  const rx = Math.abs(k) * r;
+  const waxing = p < 0.5;
+  const outer = waxing ? 1 : 0;
+  const term = waxing ? (k > 0 ? 0 : 1) : (k > 0 ? 1 : 0);
+  return `M0 ${-r} A${r} ${r} 0 0 ${outer} 0 ${r} A${rx} ${r} 0 0 ${term} 0 ${-r}Z`;
+}
+
+// ---------- SEPTA trains (their API only allows other sites through JSONP) ----------
+let transit = { data: null, at: 0, error: '', station: '' };
+function jsonp(url) {
+  return new Promise((resolve, reject) => {
+    const cb = 'septa_' + uid();
+    const s = document.createElement('script');
+    const done = () => { clearTimeout(timer); delete window[cb]; s.remove(); };
+    const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, 10000);
+    window[cb] = (data) => { done(); resolve(data); };
+    s.onerror = () => { done(); reject(new Error('network')); };
+    s.src = `${url}&callback=${cb}`;
+    document.head.append(s);
+  });
+}
+async function loadTransit() {
+  if (!isOn('transit') || document.hidden) return;
+  const station = settings.station.trim() || 'Lansdowne';
+  try {
+    const raw = await jsonp(`https://www3.septa.org/api/Arrivals/index.php?station=${encodeURIComponent(station)}&results=6`);
+    const groups = raw && typeof raw === 'object' ? Object.values(raw)[0] : null;
+    if (!Array.isArray(groups)) throw new Error('station');
+    const dirs = {};
+    for (const g of groups) for (const [dir, list] of Object.entries(g || {})) dirs[dir] = Array.isArray(list) ? list : [];
+    if (!Object.keys(dirs).length) throw new Error('station');
+    transit = { data: dirs, at: Date.now(), error: '', station };
+  } catch (e) {
+    transit = {
+      data: null, at: 0, station,
+      error: e.message === 'station'
+        ? `SEPTA lists no trains for “${station}”. Check the station name in Settings.`
+        : 'Train times aren’t loading. They will try again in a minute.'
+    };
+  }
+  refresh('transit');
+}
 
 // ---------- Sites ----------
 const DEFAULT_SITES = {
@@ -633,12 +1179,11 @@ const DEFAULT_SITES = {
     ]}
   ]
 };
-let data = store.get('np.sites', null) || structuredClone(DEFAULT_SITES);
-let editing = false;
+let sites = store.get('np.sites', null) || structuredClone(DEFAULT_SITES);   // same key as the first version, so your sites carry over
+let sitesEditing = false;
 let editingSiteId = null;
-const save = () => store.set('np.sites', data);
-const activeGroup = () => data.groups.find((g) => g.id === data.active) || data.groups[0];
-
+const saveSites = () => store.set('np.sites', sites);
+const activeGroup = () => sites.groups.find((g) => g.id === sites.active) || sites.groups[0];
 function normalizeUrl(raw) {
   let s = raw.trim();
   if (!/^https?:\/\//i.test(s)) s = 'https://' + s;
@@ -649,107 +1194,637 @@ function favicon(url) {
   try { return `https://www.google.com/s2/favicons?domain=${new URL(url).hostname}&sz=64`; }
   catch { return ''; }
 }
-
-function renderTabs() {
-  const tabs = $('tabs');
-  tabs.innerHTML = '';
-  data.groups.forEach((g) => {
-    const b = document.createElement('button');
-    b.className = 'tab';
-    b.type = 'button';
-    b.role = 'tab';
-    b.textContent = g.name;
-    b.setAttribute('aria-selected', String(g.id === activeGroup().id));
-    b.addEventListener('click', () => { data.active = g.id; save(); render(); });
-    // While editing, drop a site on a tab to move it into that group
-    b.addEventListener('dragover', (e) => { if (editing) { e.preventDefault(); b.classList.add('drop-target'); } });
-    b.addEventListener('dragleave', () => b.classList.remove('drop-target'));
-    b.addEventListener('drop', (e) => {
-      e.preventDefault();
-      b.classList.remove('drop-target');
-      moveSiteToGroup(e.dataTransfer.getData('text/plain'), g.id);
-    });
-    tabs.appendChild(b);
-  });
-}
-
-function renderGrid() {
-  const grid = $('grid');
-  const group = activeGroup();
-  grid.innerHTML = '';
-  group.sites.forEach((site) => {
-    const li = document.createElement('li');
-    li.className = 'site';
-    li.dataset.id = site.id;
-    li.draggable = editing;
-
-    const a = document.createElement('a');
-    a.href = site.url;
-    const icon = document.createElement('div');
-    icon.className = 'icon';
-    const img = new Image();
-    img.alt = '';
-    img.src = favicon(site.url);
-    img.onerror = () => { icon.innerHTML = `<b>${site.name.charAt(0).toUpperCase()}</b>`; };
-    icon.appendChild(img);
-    const label = document.createElement('span');
-    label.textContent = site.name;
-    a.append(icon, label);
-    a.addEventListener('click', (e) => { if (editing) { e.preventDefault(); openSiteDialog(site); } });
-
-    const tools = document.createElement('div');
-    tools.className = 'tools';
-    tools.innerHTML = `<button type="button" aria-label="Edit ${site.name}">&#9998;</button>`
-      + `<button type="button" class="remove" aria-label="Remove ${site.name}">&times;</button>`;
-    tools.children[0].addEventListener('click', () => openSiteDialog(site));
-    tools.children[1].addEventListener('click', () => {
-      group.sites = group.sites.filter((s) => s.id !== site.id);
-      save(); renderGrid();
-    });
-
-    li.addEventListener('dragstart', (e) => {
-      e.dataTransfer.setData('text/plain', site.id);
-      li.classList.add('dragging');
-    });
-    li.addEventListener('dragend', () => li.classList.remove('dragging'));
-    li.addEventListener('dragover', (e) => { if (editing) e.preventDefault(); });
-    li.addEventListener('drop', (e) => {
-      e.preventDefault();
-      const fromId = e.dataTransfer.getData('text/plain');
-      const from = group.sites.findIndex((s) => s.id === fromId);
-      const to = group.sites.findIndex((s) => s.id === site.id);
-      if (from < 0 || from === to) return;
-      const [moved] = group.sites.splice(from, 1);
-      group.sites.splice(to, 0, moved);
-      save(); renderGrid();
-    });
-
-    li.append(a, tools);
-    grid.appendChild(li);
-  });
-
-  // The add tile is always last
-  const add = document.createElement('li');
-  add.className = 'site';
-  add.innerHTML = '<button class="add" type="button"><div class="icon">+</div><span>Add site</span></button>';
-  add.firstChild.addEventListener('click', () => openSiteDialog(null));
-  grid.appendChild(add);
-}
-
 function moveSiteToGroup(siteId, groupId) {
-  const from = data.groups.find((g) => g.sites.some((s) => s.id === siteId));
-  const to = data.groups.find((g) => g.id === groupId);
+  const from = sites.groups.find((g) => g.sites.some((s) => s.id === siteId));
+  const to = sites.groups.find((g) => g.id === groupId);
   if (!from || !to || from === to) return;
   const site = from.sites.find((s) => s.id === siteId);
   from.sites = from.sites.filter((s) => s.id !== siteId);
   to.sites.push(site);
-  save(); render();
+  saveSites(); refresh('sites');
 }
 
-function render() {
-  $('sites').classList.toggle('editing', editing);
-  renderTabs();
-  renderGrid();
+// ---------- Tasks, notes and focus timer state ----------
+let tasks = store.get('sp.tasks', []);
+const saveTasks = () => store.set('sp.tasks', tasks);
+const FOCUS_MIN = { focus: 25, break: 5 };
+let focus = store.get('sp.focus', { mode: 'focus', endsAt: null, left: 25 * 60e3 });
+const saveFocus = () => store.set('sp.focus', focus);
+const focusLeft = () => (focus.endsAt ? Math.max(0, focus.endsAt - Date.now()) : focus.left);
+const mmss = (ms) => { const s = Math.ceil(ms / 1000); return `${Math.floor(s / 60)}:${pad(s % 60)}`; };
+let shownMonth = new Date(); shownMonth.setDate(1);
+
+// ---------- Widgets ----------
+const SIZES = { s: 'Small', m: 'Medium', l: 'Large', w: 'Wide' };
+const WIDGETS = {
+  clock:    { name: 'Clock', blurb: 'Time, date, greeting and a weather line', sizes: ['s', 'm', 'l', 'w'], bare: true, render: renderClock },
+  search:   { name: 'Search', blurb: 'Google, DuckDuckGo, ChatGPT or Claude', sizes: ['m', 'w'], render: renderSearch },
+  weather:  { name: 'Weather', blurb: 'Now, the next hours and the week ahead', sizes: ['s', 'm', 'l', 'w'], render: renderWeather },
+  sky:      { name: 'Sky', blurb: 'Moon phase, sunrise, sunset and daylight left', sizes: ['s', 'm', 'l'], render: renderSky },
+  transit:  { name: 'Trains', blurb: 'Live SEPTA Regional Rail departures', sizes: ['m', 'l'], render: renderTransit },
+  sites:    { name: 'Sites', blurb: 'Your links, in groups', sizes: ['m', 'l', 'w'], render: renderSites },
+  calendar: { name: 'Calendar', blurb: 'Today, or the whole month', sizes: ['s', 'l'], render: renderCalendar },
+  notes:    { name: 'Quick note', blurb: 'A scratchpad that saves as you type', sizes: ['s', 'm', 'l'], render: renderNotes },
+  tasks:    { name: 'Tasks', blurb: 'A short to-do list', sizes: ['s', 'm', 'l'], render: renderTasks },
+  focus:    { name: 'Focus timer', blurb: '25 minutes on, 5 off, with no sound', sizes: ['s', 'm'], render: renderFocus }
+};
+const DEFAULT_LAYOUT = [
+  { id: 'clock', size: 'l', on: true },
+  { id: 'weather', size: 'm', on: true },
+  { id: 'sky', size: 'm', on: true },
+  { id: 'search', size: 'm', on: true },
+  { id: 'transit', size: 'm', on: true },
+  { id: 'sites', size: 'm', on: true },
+  { id: 'calendar', size: 'l', on: true },
+  { id: 'notes', size: 'm', on: true },
+  { id: 'tasks', size: 'm', on: false },
+  { id: 'focus', size: 's', on: false }
+];
+function normalizeLayout(list) {
+  const out = (Array.isArray(list) ? list : []).filter((w) => WIDGETS[w.id]);
+  for (const d of DEFAULT_LAYOUT) if (!out.some((w) => w.id === d.id)) out.push({ ...d, on: false });
+  for (const w of out) if (!WIDGETS[w.id].sizes.includes(w.size)) w.size = WIDGETS[w.id].sizes[0];
+  return out;
+}
+let layout = normalizeLayout(store.get('sp.layout', null) || structuredClone(DEFAULT_LAYOUT));
+const saveLayout = () => store.set('sp.layout', layout);
+const isOn = (id) => layout.some((w) => w.id === id && w.on);
+const mounted = {};
+
+function renderClock(b, size) {
+  b.innerHTML = `<div class="clock clock-${size}">
+    <button class="time" type="button" title="Switch between 12 and 24 hour"><span data-b="hm">--:--</span><span class="sub"><span class="sec" data-b="sec"></span><span data-b="ampm"></span></span></button>
+    <div class="clock-meta"><p class="greet" data-b="greet"></p><p class="date" data-b="date"></p><p class="wxline" data-b="wxline"></p></div>
+  </div>`;
+  b.querySelector('.time').addEventListener('click', () => {
+    settings.use24 = !settings.use24;
+    saveSettings(); syncSettingsForm(); tick();
+    refresh('weather'); refresh('sky'); refresh('transit');
+  });
+  tick();
+}
+
+const ENGINES = {
+  google:     { label: 'Google', url: 'https://www.google.com/search?q=', hint: 'Search the web' },
+  // Gemini has no official way to pre-fill a question from the address, so the question is copied for pasting
+  gemini:     { label: 'Gemini', url: 'https://gemini.google.com/app', hint: 'Ask Gemini (your question is copied, paste with Ctrl+V)', copy: true },
+  duckduckgo: { label: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=', hint: 'Search privately with DuckDuckGo' },
+  chatgpt:    { label: 'ChatGPT', url: 'https://chatgpt.com/?q=', hint: 'Ask ChatGPT' },
+  claude:     { label: 'Claude', url: 'https://claude.ai/new?q=', hint: 'Ask Claude' }
+};
+// BrowserOS's built-in Scheduled Tasks page (part of its AI extension)
+const BROWSEROS_TASKS = 'chrome-extension://bflpfmnmnokmjhmgnolecpppdbdophmk/app.html#/scheduled';
+function renderSearch(b) {
+  if (!ENGINES[settings.engine]) settings.engine = 'google';
+  b.innerHTML = `<form class="search" role="search">
+    <div class="engines">${Object.entries(ENGINES).map(([k, e]) => `<button type="button" data-engine="${k}" aria-pressed="${k === settings.engine}">${e.label}</button>`).join('')}
+      <a class="os-link" href="${BROWSEROS_TASKS}" title="Open scheduled tasks in BrowserOS">${ico('clock')}BrowserOS tasks</a></div>
+    <label class="field-search">${ico('search')}<input type="search" name="q" autocomplete="off" aria-label="Search" placeholder="${ENGINES[settings.engine].hint}"><kbd title="Press / anywhere to search">/</kbd></label>
+  </form>`;
+  const form = b.querySelector('form');
+  const input = form.querySelector('input');
+  form.querySelector('.engines').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    settings.engine = btn.dataset.engine;
+    saveSettings();
+    form.querySelectorAll('.engines button').forEach((x) => x.setAttribute('aria-pressed', String(x === btn)));
+    input.placeholder = ENGINES[settings.engine].hint;
+    input.focus();
+  });
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const q = input.value.trim();
+    if (!q) return;
+    const engine = ENGINES[settings.engine];
+    if (engine.copy) {
+      try { await navigator.clipboard.writeText(q); } catch {}
+      location.href = engine.url;
+    } else {
+      location.href = engine.url + encodeURIComponent(q);
+    }
+  });
+}
+
+function renderWeather(b, size) {
+  const d = wxData();
+  const head = `<div class="w-head"><h2>${esc(shortPlace())}</h2>${d && size !== 's' ? `<span class="w-meta">Feels like ${Math.round(d.current.apparent_temperature)}°</span>` : ''}</div>`;
+  if (!d) { b.innerHTML = head + `<p class="note">${esc(wxError || 'Loading the forecast…')}</p>`; return; }
+  const c = d.current, tz = d.timezone;
+  const hi = Math.round(d.daily.temperature_2m_max[0]), lo = Math.round(d.daily.temperature_2m_min[0]);
+  const now = `<div class="wx-now"><span class="wx-icon">${wxIcon(c.weather_code, c.is_day)}</span>
+    <span class="wx-temp">${Math.round(c.temperature_2m)}°</span>
+    <span class="wx-desc"><strong>${cap(skyWords(c.weather_code))}</strong><span>High ${hi}°, low ${lo}°</span></span></div>`;
+
+  let hours = '';
+  if (size !== 's') {
+    const start = d.hourly.time.findIndex((t) => t * 1000 > Date.now() - 3600e3);
+    const items = [];
+    for (let i = start; i >= 0 && i < start + 12 && i < d.hourly.time.length; i++) {
+      const rain = d.hourly.precipitation_probability[i];
+      items.push(`<li title="${rain >= 20 ? rain + '% chance of rain' : ''}"><span class="h">${i === start ? 'Now' : hourLabel(d.hourly.time[i] * 1000, tz)}</span>${wxIcon(d.hourly.weather_code[i], d.hourly.is_day[i])}<span class="t">${Math.round(d.hourly.temperature_2m[i])}°</span><span class="r">${rain >= 20 ? rain + '%' : ''}</span></li>`);
+    }
+    hours = `<ol class="hours" aria-label="Next hours">${items.join('')}</ol>`;
+  }
+
+  let days = '';
+  if (size === 'l') {
+    const n = 5;
+    const lows = d.daily.temperature_2m_min.slice(0, n), highs = d.daily.temperature_2m_max.slice(0, n);
+    const min = Math.min(...lows), max = Math.max(...highs), span = Math.max(1, max - min);
+    days = '<ol class="days-list" aria-label="Next five days">' + lows.map((l, i) => {
+      const h = highs[i];
+      const name = i === 0 ? 'Today' : new Date(d.daily.time[i] * 1000).toLocaleDateString(undefined, { weekday: 'short', timeZone: tz });
+      const rain = d.daily.precipitation_probability_max[i];
+      return `<li><span>${name}</span>${wxIcon(d.daily.weather_code[i])}<span class="lo">${Math.round(l)}°</span>
+        <span class="range"><i style="left:${((l - min) / span) * 100}%;width:${Math.max(4, ((h - l) / span) * 100)}%"></i></span>
+        <span>${Math.round(h)}°</span><span class="rain">${rain >= 30 ? rain + '%' : ''}</span></li>`;
+    }).join('') + '</ol>';
+  }
+  b.innerHTML = `${head}<div class="wx-${size}" style="display:contents"><div class="wx-main">${now}${hours}</div>${days}</div>`;
+}
+
+function dayArc(d) {
+  const tz = d.timezone, now = Date.now();
+  const rise = d.daily.sunrise[0] * 1000, set = d.daily.sunset[0] * 1000;
+  const f = Math.min(1, Math.max(0, (now - rise) / (set - rise)));
+  const up = now >= rise && now < set;
+  // The sun travels a half ellipse from sunrise (left) to sunset (right)
+  const th = Math.PI * (1 - f);
+  const x = (150 + 120 * Math.cos(th)).toFixed(1), y = (96 - 76 * Math.sin(th)).toFixed(1);
+  const caption = up
+    ? `${dur(set - now)} of daylight left`
+    : `Sunrise in ${dur((now < rise ? rise : d.daily.sunrise[1] * 1000) - now)}`;
+  const arc = 'M30 96 A120 76 0 0 1 270 96';
+  return `<figure class="arc-wrap"><svg class="arc" viewBox="0 0 300 118" role="img" aria-label="${caption}">
+    <line class="horizon" x1="6" y1="96" x2="294" y2="96"/>
+    <path class="track" d="${arc}" pathLength="1"/>
+    <path class="done" d="${arc}" pathLength="1" stroke-dasharray="${f.toFixed(4)} 1"/>
+    ${up ? `<circle class="sun-glow" cx="${x}" cy="${y}" r="13"/><circle class="sun-dot" cx="${x}" cy="${y}" r="5.5"/>` : ''}
+    <text x="30" y="113" text-anchor="middle">${fmtTime(rise, tz)}</text>
+    <text x="270" y="113" text-anchor="middle">${fmtTime(set, tz)}</text>
+    <text class="cap" x="150" y="78" text-anchor="middle">${caption}</text>
+  </svg></figure>`;
+}
+
+function renderSky(b, size) {
+  const now = new Date(), p = moonPhase(now);
+  const lit = Math.round(((1 - Math.cos(2 * Math.PI * p)) / 2) * 100);
+  const toFull = ((0.5 - p + 1) % 1) * SYNODIC;
+  const next = toFull < 1 || toFull > SYNODIC - 1
+    ? 'Full moon tonight'
+    : `Full on ${new Date(now.getTime() + toFull * 864e5).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+  const h = now.getHours();
+  const moon = `<div class="sky-top"><svg class="moon" viewBox="-32 -32 64 64" aria-hidden="true"><circle r="30" class="moon-dark"/><path class="moon-lit" d="${moonPath(p)}"/></svg>
+    <div class="moon-text"><strong>${moonName(p)}</strong><span>${lit}% lit</span><span>${next}</span></div></div>`;
+  const d = wxData();
+  let sun = '', arc = '';
+  if (d && size !== 's') {
+    const rise = d.daily.sunrise[0] * 1000, set = d.daily.sunset[0] * 1000;
+    const mins = Math.round((set - rise) / 60000);
+    sun = `<dl class="sun"><div><dt>Sunrise</dt><dd>${fmtTime(rise, d.timezone)}</dd></div><div><dt>Sunset</dt><dd>${fmtTime(set, d.timezone)}</dd></div><div><dt>Daylight</dt><dd>${Math.floor(mins / 60)}h ${mins % 60}m</dd></div></dl>`;
+    if (size === 'l') arc = dayArc(d);
+  }
+  b.innerHTML = `<div class="w-head"><h2>${h >= 17 || h < 5 ? 'Tonight’s sky' : 'Today’s sky'}</h2></div>
+    <div class="sky-row sky-${size}">${moon}${sun}</div>${arc}`;
+}
+
+function trainRow(t) {
+  const sched = new Date(String(t.sched_time || t.depart_time).replace(' ', 'T'));
+  const lateMatch = /^(\d+)\s*min/i.exec(t.status || '');
+  const late = lateMatch ? +lateMatch[1] : 0;
+  const mins = Math.round((sched.getTime() + late * 60000 - Date.now()) / 60000);
+  const status = /on time/i.test(t.status || '') ? '' : late ? `${late} min late` : (t.status || '');
+  const details = [`${t.line} line`, `train ${t.train_id}`, t.track ? `track ${t.track}` : ''].filter(Boolean).join(', ');
+  return { mins, html: `<li title="${esc(details)}"><span class="tt">${fmtTime(sched)}</span><span class="td">${esc(t.destination)}${status ? `<em>${esc(status)}</em>` : ''}</span><span class="tin">${mins <= 0 ? 'Now' : mins < 90 ? mins + ' min' : ''}</span></li>` };
+}
+function renderTransit(b, size) {
+  const station = transit.station || settings.station || 'Lansdowne';
+  const head = `<div class="w-head"><h2>Trains from ${esc(station)}</h2>${transit.at ? `<span class="w-meta">Updated ${fmtTime(transit.at)}</span>` : ''}</div>`;
+  if (transit.error) { b.innerHTML = head + `<p class="note">${esc(transit.error)}</p>`; return; }
+  if (!transit.data) { b.innerHTML = head + '<p class="note">Loading departures…</p>'; return; }
+  const n = size === 'l' ? 6 : 2;
+  const cols = Object.entries(transit.data).map(([dir, list]) => {
+    const rows = list.map(trainRow).filter((r) => r.mins >= -1).slice(0, n).map((r) => r.html).join('');
+    return `<div class="dir"><h3>${esc(dir)}</h3><ol>${rows || '<li class="none">No more trains listed</li>'}</ol></div>`;
+  }).join('');
+  b.innerHTML = head + `<div class="trains">${cols}</div>`;
+}
+
+function renderSites(b) {
+  const group = activeGroup();
+  b.innerHTML = `<div class="w-head"><div class="tabs" role="tablist" aria-label="Site groups"></div><div class="act"></div></div><ul class="tiles${sitesEditing ? ' editing' : ''}"></ul>`;
+  const tabs = b.querySelector('.tabs'), act = b.querySelector('.act'), grid = b.querySelector('.tiles');
+
+  for (const g of sites.groups) {
+    const t = document.createElement('button');
+    t.type = 'button'; t.className = 'tab'; t.setAttribute('role', 'tab'); t.textContent = g.name;
+    t.setAttribute('aria-selected', String(g.id === group.id));
+    t.addEventListener('click', () => { sites.active = g.id; saveSites(); refresh('sites'); });
+    // While editing, drop a site on a tab to move it into that group
+    t.addEventListener('dragover', (e) => { if (sitesEditing) { e.preventDefault(); t.classList.add('drop'); } });
+    t.addEventListener('dragleave', () => t.classList.remove('drop'));
+    t.addEventListener('drop', (e) => { e.preventDefault(); t.classList.remove('drop'); moveSiteToGroup(e.dataTransfer.getData('text/plain'), g.id); });
+    tabs.append(t);
+  }
+
+  const addButton = (label, fn, cls = 'mini') => {
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = cls; x.textContent = label;
+    x.addEventListener('click', fn);
+    act.append(x);
+  };
+  if (sitesEditing) { addButton('New group', newGroup); addButton('Rename', renameGroup); addButton('Delete', deleteGroup); }
+  addButton(sitesEditing ? 'Done' : 'Edit', () => { sitesEditing = !sitesEditing; refresh('sites'); }, sitesEditing ? 'mini on' : 'mini');
+
+  for (const site of group.sites) {
+    const li = document.createElement('li');
+    li.className = 'tile'; li.dataset.id = site.id; li.draggable = sitesEditing;
+    const a = document.createElement('a');
+    a.href = site.url;
+    const icon = document.createElement('span');
+    icon.className = 'ficon';
+    const img = new Image();
+    img.alt = ''; img.src = favicon(site.url);
+    img.onerror = () => { const letter = document.createElement('b'); letter.textContent = site.name.charAt(0).toUpperCase(); icon.replaceChildren(letter); };
+    icon.append(img);
+    const label = document.createElement('span');
+    label.className = 'tname'; label.textContent = site.name;
+    a.append(icon, label);
+    a.addEventListener('click', (e) => { if (sitesEditing) { e.preventDefault(); openSiteDialog(site); } });
+    li.append(a);
+
+    if (sitesEditing) {
+      const tools = document.createElement('div');
+      tools.className = 'tools';
+      tools.innerHTML = `<button type="button" aria-label="Edit ${esc(site.name)}">${ico('pencil')}</button><button type="button" class="remove" aria-label="Remove ${esc(site.name)}">${ico('x')}</button>`;
+      tools.children[0].addEventListener('click', () => openSiteDialog(site));
+      tools.children[1].addEventListener('click', () => {
+        group.sites = group.sites.filter((s) => s.id !== site.id);
+        saveSites(); refresh('sites');
+        toast(`Removed ${site.name}.`, { label: 'Undo', run() { group.sites.push(site); saveSites(); refresh('sites'); } });
+      });
+      li.append(tools);
+    }
+
+    li.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', site.id); li.classList.add('dragging'); });
+    li.addEventListener('dragend', () => li.classList.remove('dragging'));
+    li.addEventListener('dragover', (e) => { if (sitesEditing) e.preventDefault(); });
+    li.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const from = group.sites.findIndex((s) => s.id === e.dataTransfer.getData('text/plain'));
+      const to = group.sites.findIndex((s) => s.id === site.id);
+      if (from < 0 || from === to) return;
+      const [moved] = group.sites.splice(from, 1);
+      group.sites.splice(to, 0, moved);
+      saveSites(); refresh('sites');
+    });
+    grid.append(li);
+  }
+
+  if (sitesEditing || !group.sites.length) {
+    const add = document.createElement('li');
+    add.className = 'tile';
+    add.innerHTML = `<button class="add" type="button"><span class="ficon">${ico('plus')}</span><span class="tname">Add site</span></button>`;
+    add.firstChild.addEventListener('click', () => openSiteDialog(null));
+    grid.append(add);
+  }
+}
+
+const gcalDay = (d) => `https://calendar.google.com/calendar/r/day/${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+function isoWeek(date) {
+  const t = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  return Math.ceil(((t - Date.UTC(t.getUTCFullYear(), 0, 1)) / 864e5 + 1) / 7);
+}
+function renderCalendar(b, size) {
+  const today = new Date();
+  if (size === 's') {
+    b.innerHTML = `<a class="today-card" href="${gcalDay(today)}" title="Open today in Google Calendar">
+      <span class="tc-wd">${today.toLocaleDateString(undefined, { weekday: 'long' })}</span>
+      <span class="tc-day">${today.getDate()}</span>
+      <span class="tc-mo">${today.toLocaleDateString(undefined, { month: 'long' })}, week ${isoWeek(today)}</span></a>`;
+    return;
+  }
+  const y = shownMonth.getFullYear(), m = shownMonth.getMonth();
+  const title = shownMonth.toLocaleDateString(undefined, { month: 'long' }) + (y !== today.getFullYear() ? ` <small>${y}</small>` : '');
+  let cells = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => `<span class="dow">${d}</span>`).join('');
+  const start = new Date(y, m, 1 - new Date(y, m, 1).getDay());
+  for (let i = 0; i < 42; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    if (i >= 35 && d.getMonth() !== m) break;   // skip a sixth row that is entirely next month
+    const cls =[d.getMonth() !== m ? 'out' : '', d.toDateString() === today.toDateString() ? 'today' : ''].join(' ').trim();
+    cells += `<a href="${gcalDay(d)}" class="${cls}" title="${d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}">${d.getDate()}</a>`;
+  }
+  b.innerHTML = `<div class="w-head"><h2 class="month">${title}</h2><div class="act">
+      <button class="mini ic" type="button" data-step="-1" aria-label="Previous month">${ico('left')}</button>
+      <button class="mini" type="button" data-step="0">Today</button>
+      <button class="mini ic" type="button" data-step="1" aria-label="Next month">${ico('right')}</button></div></div>
+    <div class="days">${cells}</div>`;
+  b.querySelector('.act').addEventListener('click', (e) => {
+    const step = e.target.closest('button')?.dataset.step;
+    if (step === undefined) return;
+    if (step === '0') { shownMonth = new Date(); shownMonth.setDate(1); }
+    else shownMonth.setMonth(shownMonth.getMonth() + Number(step));
+    refresh('calendar');
+  });
+}
+
+function renderNotes(b) {
+  b.innerHTML = `<div class="w-head"><h2>Quick note</h2><span class="w-meta notes-state"></span></div>
+    <textarea class="notes-area" aria-label="Quick note" placeholder="Jot something down. It saves as you type."></textarea>`;
+  const ta = b.querySelector('textarea'), state = b.querySelector('.notes-state');
+  ta.value = store.get('sp.notes', '');
+  let timer;
+  ta.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      store.set('sp.notes', ta.value);
+      state.textContent = 'Saved';
+      setTimeout(() => { state.textContent = ''; }, 1500);
+    }, 400);
+  });
+}
+
+function renderTasks(b) {
+  const left = tasks.filter((t) => !t.done).length;
+  b.innerHTML = `<div class="w-head"><h2>Tasks</h2><span class="w-meta">${tasks.length ? `${left} left` : ''}</span>
+      <div class="act">${tasks.some((t) => t.done) ? '<button class="mini" type="button" data-a="clear">Clear done</button>' : ''}</div></div>
+    <form class="task-add"><input class="task-input" maxlength="120" placeholder="Add a task and press Enter" aria-label="Add a task" autocomplete="off"></form>
+    <ul class="task-list">${tasks.map((t) => `<li class="${t.done ? 'done' : ''}" data-id="${t.id}"><label><input type="checkbox" ${t.done ? 'checked' : ''}><span>${esc(t.text)}</span></label><button class="x" type="button" aria-label="Delete task">${ico('x')}</button></li>`).join('')}</ul>`;
+  b.querySelector('form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = e.target.querySelector('input').value.trim();
+    if (!text) return;
+    tasks.push({ id: uid(), text, done: false });
+    saveTasks(); refresh('tasks');
+    mounted.tasks?.body.querySelector('.task-input')?.focus();
+  });
+  b.querySelector('[data-a="clear"]')?.addEventListener('click', () => { tasks = tasks.filter((t) => !t.done); saveTasks(); refresh('tasks'); });
+  b.querySelector('.task-list').addEventListener('change', (e) => {
+    const task = tasks.find((t) => t.id === e.target.closest('li').dataset.id);
+    task.done = e.target.checked;
+    saveTasks(); refresh('tasks');
+  });
+  b.querySelector('.task-list').addEventListener('click', (e) => {
+    if (!e.target.closest('.x')) return;
+    const id = e.target.closest('li').dataset.id;
+    tasks = tasks.filter((t) => t.id !== id);
+    saveTasks(); refresh('tasks');
+  });
+}
+
+function renderFocus(b, size) {
+  const running = Boolean(focus.endsAt);
+  b.innerHTML = `<div class="focus">
+    <div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-track" cx="50" cy="50" r="44"/><circle class="ring-bar" cx="50" cy="50" r="44" pathLength="1" data-ring></circle></svg><span class="ft" data-b="ft"></span></div>
+    <div class="focus-side">
+      ${size === 'm'
+        ? `<div class="modes" role="radiogroup" aria-label="Timer"><button type="button" role="radio" data-m="focus" aria-checked="${focus.mode === 'focus'}">Focus 25</button><button type="button" role="radio" data-m="break" aria-checked="${focus.mode === 'break'}">Break 5</button></div>`
+        : `<span class="fmode">${focus.mode === 'focus' ? 'Focus' : 'Break'}</span>`}
+      <div class="fbtns"><button class="btn primary sm" type="button" data-a="toggle">${running ? 'Pause' : 'Start'}</button><button class="btn quiet sm ic" type="button" data-a="reset" aria-label="Reset timer">${ico('reset')}</button></div>
+    </div></div>`;
+  b.querySelector('[data-a="toggle"]').addEventListener('click', () => {
+    if (focus.endsAt) { focus.left = focusLeft(); focus.endsAt = null; }
+    else focus.endsAt = Date.now() + focus.left;
+    saveFocus(); refresh('focus');
+  });
+  b.querySelector('[data-a="reset"]').addEventListener('click', () => focusReset(focus.mode));
+  b.querySelector('.modes')?.addEventListener('click', (e) => { const m = e.target.closest('button')?.dataset.m; if (m) focusReset(m); });
+  focusTick();
+}
+function focusReset(mode) {
+  focus = { mode, endsAt: null, left: FOCUS_MIN[mode] * 60e3 };
+  saveFocus(); refresh('focus'); focusTick();
+}
+function focusTick() {
+  const left = focusLeft();
+  if (focus.endsAt && left <= 0) {
+    const finished = focus.mode;
+    focusReset(finished === 'focus' ? 'break' : 'focus');
+    toast(finished === 'focus' ? 'Focus session done. Take a 5 minute break.' : 'Break’s over. Start another focus session when you’re ready.');
+    const el = mounted.focus?.el;
+    if (el) { el.classList.add('ding'); setTimeout(() => el.classList.remove('ding'), 3600); }
+    return;
+  }
+  setAll('ft', mmss(left));
+  const frac = left / (FOCUS_MIN[focus.mode] * 60e3);
+  document.querySelectorAll('[data-ring]').forEach((c) => { c.style.strokeDasharray = `${frac.toFixed(4)} 1`; });
+  document.title = focus.endsAt ? `${mmss(left)} ${focus.mode === 'focus' ? 'focus' : 'break'} left` : BASE_TITLE;
+}
+
+// ---------- Board: build, arrange, drag ----------
+let arranging = false;
+
+function sizeGlyph(s) {
+  const used = { s: ['0,0'], m: ['0,0', '5,0'], l: ['0,0', '5,0', '0,5', '5,5'], w: ['0,0', '5,0', '10,0', '15,0'] }[s];
+  let rects = '';
+  for (const y of [0, 5]) for (const x of [0, 5, 10, 15]) {
+    rects += `<rect x="${x}" y="${y}" width="4" height="4" rx="1" opacity="${used.includes(`${x},${y}`) ? 1 : 0.28}"/>`;
+  }
+  return `<svg viewBox="0 0 19 9" fill="currentColor" aria-hidden="true">${rects}</svg>`;
+}
+
+function buildChrome(item, def) {
+  const c = document.createElement('div');
+  c.className = 'chrome';
+  c.innerHTML = `<button class="grip" type="button" aria-label="Move ${def.name}. Arrow keys move it earlier or later.">${ico('grip')}<span>${def.name}</span></button>
+    <div class="sizes" role="radiogroup" aria-label="${def.name} size">${def.sizes.map((s) => `<button type="button" role="radio" data-size="${s}" aria-checked="${s === item.size}" title="${SIZES[s]}" aria-label="${SIZES[s]}">${sizeGlyph(s)}</button>`).join('')}</div>
+    <button class="hide-w" type="button" aria-label="Hide ${def.name}" title="Hide">${ico('eyeoff')}</button>`;
+  c.querySelector('.sizes').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) setSize(item.id, b.dataset.size); });
+  c.querySelector('.hide-w').addEventListener('click', () => hideWidget(item.id));
+  c.querySelector('.grip').addEventListener('keydown', (e) => {
+    const dir = { ArrowLeft: -1, ArrowUp: -1, ArrowRight: 1, ArrowDown: 1 }[e.key];
+    if (!dir) return;
+    e.preventDefault();
+    const el = mounted[item.id].el;
+    const all = [...$('board').children];
+    const target = all[all.indexOf(el) + dir];
+    if (!target) return;
+    flip(() => moveWidget(el, target));
+    saveLayout(); renderWidgetList();
+    el.querySelector('.grip').focus();
+  });
+  return c;
+}
+
+function buildWidget(item) {
+  const def = WIDGETS[item.id];
+  const el = document.createElement('section');
+  el.className = `widget w-${item.size}${def.bare ? ' bare' : ''}`;
+  el.dataset.id = item.id;
+  el.setAttribute('aria-label', def.name);
+  const body = document.createElement('div');
+  body.className = 'body';
+  el.append(body, buildChrome(item, def));
+  mounted[item.id] = { el, body };
+  def.render(body, item.size);
+  return el;
+}
+
+function renderBoard() {
+  const board = $('board');
+  board.replaceChildren();
+  for (const key of Object.keys(mounted)) delete mounted[key];
+  for (const item of layout) if (item.on) board.append(buildWidget(item));
+  if (!board.children.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-board';
+    empty.innerHTML = '<p>Every widget is hidden.</p><button class="btn primary" type="button">Choose widgets</button>';
+    empty.querySelector('button').addEventListener('click', () => openSettings('set-widgets'));
+    board.append(empty);
+  }
+}
+
+function refresh(id) {
+  const m = mounted[id];
+  if (m && m.el.isConnected) WIDGETS[id].render(m.body, layout.find((w) => w.id === id).size);
+}
+
+// Animate everything that moved: measure, change, then slide from the old spot to the new one
+function flip(change) {
+  const board = $('board');
+  const before = new Map([...board.children].map((e) => [e, e.getBoundingClientRect()]));
+  change();
+  for (const e of board.children) {
+    const a = before.get(e);
+    if (!a || e.classList.contains('lifted')) continue;
+    const b = e.getBoundingClientRect();
+    const dx = a.left - b.left, dy = a.top - b.top;
+    if (dx || dy) e.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+  }
+}
+
+function moveWidget(el, target) {
+  const from = layout.findIndex((w) => w.id === el.dataset.id);
+  const to = layout.findIndex((w) => w.id === target.dataset.id);
+  const [item] = layout.splice(from, 1);
+  layout.splice(to, 0, item);
+  if (from < to) target.after(el); else target.before(el);
+}
+
+function setSize(id, size) {
+  const item = layout.find((w) => w.id === id);
+  if (!item || item.size === size) return;
+  flip(() => {
+    item.size = size;
+    const { el, body } = mounted[id];
+    el.classList.remove('w-s', 'w-m', 'w-l', 'w-w');
+    el.classList.add(`w-${size}`);
+    el.querySelectorAll('.sizes button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.size === size)));
+    WIDGETS[id].render(body, size);
+  });
+  saveLayout(); renderWidgetList();
+}
+
+function hideWidget(id) {
+  const item = layout.find((w) => w.id === id);
+  flip(() => { item.on = false; mounted[id]?.el.remove(); delete mounted[id]; });
+  saveLayout(); renderWidgetList();
+  if (!$('board').children.length) renderBoard();
+  toast(`${WIDGETS[id].name} hidden.`, { label: 'Undo', run() { item.on = true; saveLayout(); renderBoard(); renderWidgetList(); } });
+}
+
+function setArranging(on) {
+  arranging = on;
+  document.body.classList.toggle('arranging', on);
+  $('arrangeBtn').setAttribute('aria-pressed', String(on));
+  $('arrangeBar').hidden = !on;
+  if (on && sitesEditing) { sitesEditing = false; refresh('sites'); }
+}
+
+$('board').addEventListener('pointerdown', (e) => {
+  if (!arranging || e.button !== 0) return;
+  const el = e.target.closest('.widget');
+  if (!el || (e.target.closest('button') && !e.target.closest('.grip'))) return;
+  e.preventDefault();
+  const board = $('board');
+  const start = el.getBoundingClientRect();
+  const off = { x: e.clientX - start.left, y: e.clientY - start.top };
+  let pointer = { x: e.clientX, y: e.clientY }, lastTarget = null, lastSwap = 0;
+  el.classList.add('lifted');
+
+  // Keep the lifted widget under the pointer, wherever its grid slot currently is
+  const place = () => {
+    const b = board.getBoundingClientRect();
+    el.style.transform = `translate(${pointer.x - off.x - b.left - el.offsetLeft}px, ${pointer.y - off.y - b.top - el.offsetTop}px) scale(1.02)`;
+  };
+  const onMove = (ev) => {
+    pointer = { x: ev.clientX, y: ev.clientY };
+    const target = document.elementsFromPoint(pointer.x, pointer.y)
+      .map((n) => n.closest && n.closest('.widget')).find((w) => w && w !== el);
+    if (target && target !== lastTarget && performance.now() - lastSwap > 140) {
+      lastTarget = target; lastSwap = performance.now();
+      flip(() => moveWidget(el, target));
+    }
+    if (!target) lastTarget = null;
+    place();
+  };
+  // Listen on the window: moving the widget in the page would drop a pointer capture on the element
+  const onUp = () => {
+    removeEventListener('pointermove', onMove);
+    removeEventListener('pointerup', onUp);
+    removeEventListener('pointercancel', onUp);
+    const from = el.style.transform;
+    el.style.transform = '';
+    el.classList.remove('lifted');
+    el.animate([{ transform: from }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+    saveLayout(); renderWidgetList();
+  };
+  addEventListener('pointermove', onMove);
+  addEventListener('pointerup', onUp);
+  addEventListener('pointercancel', onUp);
+  place();
+});
+
+$('arrangeBtn').addEventListener('click', () => setArranging(!arranging));
+$('doneArranging').addEventListener('click', () => setArranging(false));
+$('addWidgets').addEventListener('click', () => openSettings('set-widgets'));
+
+// ---------- Small dialogs ----------
+function ask({ title, label = '', text = '', value = '', ok = 'Save', danger = false }) {
+  return new Promise((resolve) => {
+    const d = $('ask');
+    const input = d.querySelector('input');
+    const okBtn = d.querySelector('[value="ok"]');
+    d.querySelector('h2').textContent = title;
+    d.querySelector('.ask-label').textContent = label;
+    input.parentElement.hidden = !label;
+    input.value = value;
+    d.querySelector('.ask-text').textContent = text;
+    d.querySelector('.ask-text').hidden = !text;
+    okBtn.textContent = ok;
+    okBtn.className = `btn ${danger ? 'danger' : 'primary'}`;
+    d.returnValue = '';
+    d.showModal();
+    if (label) input.select();
+    d.addEventListener('close', () => {
+      if (d.returnValue !== 'ok') return resolve(null);
+      resolve(label ? input.value.trim() || null : true);
+    }, { once: true });
+  });
+}
+async function newGroup() {
+  const name = await ask({ title: 'New group', label: 'Group name', ok: 'Create group' });
+  if (!name) return;
+  const g = { id: uid(), name, sites: [] };
+  sites.groups.push(g); sites.active = g.id;
+  saveSites(); refresh('sites');
+}
+async function renameGroup() {
+  const g = activeGroup();
+  const name = await ask({ title: 'Rename group', label: 'Group name', value: g.name, ok: 'Rename' });
+  if (!name) return;
+  g.name = name; saveSites(); refresh('sites');
+}
+async function deleteGroup() {
+  if (sites.groups.length === 1) { toast('Keep at least one group. Rename this one instead.'); return; }
+  const g = activeGroup();
+  const yes = await ask({ title: `Delete “${g.name}”?`, text: `Its ${g.sites.length} sites will be removed too.`, ok: 'Delete group', danger: true });
+  if (!yes) return;
+  sites.groups = sites.groups.filter((x) => x.id !== g.id);
+  sites.active = sites.groups[0].id;
+  saveSites(); refresh('sites');
 }
 
 function openSiteDialog(site) {
@@ -759,9 +1834,8 @@ function openSiteDialog(site) {
   $('siteName').value = site ? site.name : '';
   $('siteUrl').value = site ? site.url : '';
   $('siteError').textContent = '';
-  const owner = site ? data.groups.find((g) => g.sites.some((s) => s.id === site.id)) : activeGroup();
-  $('siteGroup').innerHTML = data.groups
-    .map((g) => `<option value="${g.id}" ${g.id === owner.id ? 'selected' : ''}>${g.name}</option>`).join('');
+  const owner = site ? sites.groups.find((g) => g.sites.some((s) => s.id === site.id)) : activeGroup();
+  $('siteGroup').innerHTML = sites.groups.map((g) => `<option value="${g.id}" ${g.id === owner.id ? 'selected' : ''}>${esc(g.name)}</option>`).join('');
   $('siteDialog').showModal();
 }
 $('siteUrl').addEventListener('input', () => { $('siteError').textContent = ''; });
@@ -773,184 +1847,270 @@ $('siteForm').addEventListener('submit', (e) => {
   if (!url) { e.preventDefault(); $('siteError').textContent = 'That address doesn’t look right. Try something like youtube.com.'; return; }
   const groupId = $('siteGroup').value;
   if (editingSiteId) {
-    const owner = data.groups.find((g) => g.sites.some((s) => s.id === editingSiteId));
+    const owner = sites.groups.find((g) => g.sites.some((s) => s.id === editingSiteId));
     const site = owner.sites.find((s) => s.id === editingSiteId);
     site.name = name; site.url = url;
     if (owner.id !== groupId) moveSiteToGroup(site.id, groupId);
   } else {
-    data.groups.find((g) => g.id === groupId).sites.push({ id: uid(), name, url });
+    sites.groups.find((g) => g.id === groupId).sites.push({ id: uid(), name, url });
   }
-  save(); render();
+  saveSites(); refresh('sites');
 });
 
-$('editToggle').addEventListener('click', () => {
-  editing = !editing;
-  $('editToggle').textContent = editing ? 'Done' : 'Edit sites';
-  $('editToggle').classList.toggle('on', editing);
-  $('editToggle').setAttribute('aria-pressed', String(editing));
-  render();
+function toast(message, action) {
+  const t = $('toast');
+  t.replaceChildren();
+  const span = document.createElement('span');
+  span.textContent = message;
+  t.append(span);
+  if (action) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn sm'; b.textContent = action.label;
+    b.addEventListener('click', () => { action.run(); t.classList.remove('show'); });
+    t.append(b);
+  }
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 6000);
+}
+
+// ---------- Settings sheet ----------
+function openSettings(sectionId) {
+  syncSettingsForm();
+  if (!$('settings').open) $('settings').showModal();
+  if (sectionId) $(sectionId).scrollIntoView({ block: 'start' });
+}
+$('settingsBtn').addEventListener('click', () => openSettings());
+$('closeSettings').addEventListener('click', () => $('settings').close());
+$('settings').addEventListener('click', (e) => { if (e.target === $('settings')) $('settings').close(); });   // click outside the sheet
+$('settings').querySelector('.sheet-nav').addEventListener('click', (e) => {
+  const a = e.target.closest('a');
+  if (!a) return;
+  e.preventDefault();
+  $(a.getAttribute('href').slice(1)).scrollIntoView({ block: 'start', behavior: 'smooth' });
 });
-$('newGroup').addEventListener('click', () => {
-  const name = prompt('Name the new group');
-  if (!name?.trim()) return;
-  const g = { id: uid(), name: name.trim(), sites: [] };
-  data.groups.push(g);
-  data.active = g.id;
-  save(); render();
+
+function setRadio(name, value) {
+  document.querySelectorAll(`input[name="${name}"]`).forEach((r) => { r.checked = r.value === value; });
+}
+function syncScheduleHint() {
+  const d = wxData();
+  let hint;
+  if (settings.schedule === 'sun') {
+    hint = d
+      ? `Light from sunrise (${fmtTime(d.daily.sunrise[0] * 1000, d.timezone)}) to sunset (${fmtTime(d.daily.sunset[0] * 1000, d.timezone)}) in ${shortPlace()}. It follows the sun as the days change.`
+      : 'Uses sunrise and sunset once the forecast loads. Until then it uses the set times.';
+  } else {
+    const t = (v) => { const [h, m] = v.split(':').map(Number); const x = new Date(); x.setHours(h, m, 0, 0); return fmtTime(x); };
+    hint = `Light from ${t(settings.lightAt)} to ${t(settings.darkAt)}.`;
+  }
+  $('schedHint').textContent = hint;
+}
+function syncSettingsForm() {
+  setRadio('set', settings.set);
+  setRadio('theme', settings.theme);
+  setRadio('schedule', settings.schedule);
+  setRadio('accent', settings.accent);
+  setRadio('units', settings.units);
+  $('schedBox').hidden = settings.theme !== 'schedule';
+  $('schedTimes').hidden = settings.schedule !== 'times';
+  $('lightAt').value = settings.lightAt;
+  $('darkAt').value = settings.darkAt;
+  $('dust').checked = settings.dust;
+  $('use24').checked = settings.use24;
+  $('seconds').checked = settings.seconds;
+  if (document.activeElement !== $('name')) $('name').value = settings.name;
+  if (document.activeElement !== $('station')) $('station').value = settings.station;
+  $('locName').textContent = settings.location.name;
+  syncScheduleHint();
+  renderWidgetList();
+}
+
+function renderWidgetList() {
+  const ul = $('widgetList');
+  ul.replaceChildren();
+  for (const item of layout) {
+    const def = WIDGETS[item.id];
+    const li = document.createElement('li');
+    li.className = item.on ? '' : 'off';
+    li.innerHTML = `<div><strong>${def.name}</strong><small>${def.blurb}</small></div>
+      <select aria-label="${def.name} size">${def.sizes.map((s) => `<option value="${s}" ${s === item.size ? 'selected' : ''}>${SIZES[s]}</option>`).join('')}</select>
+      <input type="checkbox" class="switch" aria-label="Show ${def.name}" ${item.on ? 'checked' : ''}>`;
+    li.querySelector('select').addEventListener('change', (e) => { item.size = e.target.value; saveLayout(); renderBoard(); });
+    li.querySelector('input').addEventListener('change', (e) => {
+      item.on = e.target.checked;
+      li.className = item.on ? '' : 'off';
+      saveLayout(); renderBoard();
+      if (item.on && item.id === 'transit') loadTransit();
+    });
+    ul.append(li);
+  }
+}
+
+const onRadio = (name, fn) => document.querySelectorAll(`input[name="${name}"]`).forEach((r) => r.addEventListener('change', () => { if (r.checked) fn(r.value); }));
+// Each theme set brings its own accent; you can still pick a different one afterwards
+const SET_ACCENT = { space: 'teal', nebula: 'violet', aurora: 'green', lunar: 'silver' };
+onRadio('set', (v) => { settings.set = v; settings.accent = SET_ACCENT[v]; saveSettings(); syncSettingsForm(); applyTheme(true); });
+onRadio('theme', (v) => { settings.theme = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
+onRadio('schedule', (v) => { settings.schedule = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
+onRadio('accent', (v) => { settings.accent = v; saveSettings(); applyTheme(false); });
+onRadio('units', (v) => { settings.units = v; saveSettings(); refresh('weather'); refresh('sky'); loadWeather(true); });
+$('lightAt').addEventListener('change', (e) => { if (e.target.value) { settings.lightAt = e.target.value; saveSettings(); syncScheduleHint(); applyTheme(true); } });
+$('darkAt').addEventListener('change', (e) => { if (e.target.value) { settings.darkAt = e.target.value; saveSettings(); syncScheduleHint(); applyTheme(true); } });
+$('dust').addEventListener('change', (e) => { settings.dust = e.target.checked; saveSettings(); sky.setEnabled(settings.dust); });
+$('use24').addEventListener('change', (e) => { settings.use24 = e.target.checked; saveSettings(); tick(); refresh('weather'); refresh('sky'); refresh('transit'); syncScheduleHint(); });
+$('seconds').addEventListener('change', (e) => { settings.seconds = e.target.checked; saveSettings(); tick(); });
+$('name').addEventListener('input', (e) => { settings.name = e.target.value; saveSettings(); tick(); });
+$('station').addEventListener('change', (e) => {
+  settings.station = e.target.value.trim() || 'Lansdowne';
+  saveSettings();
+  transit = { data: null, at: 0, error: '', station: settings.station };
+  refresh('transit'); loadTransit();
 });
-$('renameGroup').addEventListener('click', () => {
-  const g = activeGroup();
-  const name = prompt('Rename this group', g.name);
-  if (!name?.trim()) return;
-  g.name = name.trim();
-  save(); render();
+$('resetLayout').addEventListener('click', async () => {
+  const yes = await ask({ title: 'Reset the layout?', text: 'Widgets go back to their original places and sizes. Your sites, notes and tasks stay.', ok: 'Reset layout', danger: true });
+  if (!yes) return;
+  layout = normalizeLayout(structuredClone(DEFAULT_LAYOUT));
+  saveLayout(); renderBoard(); renderWidgetList(); loadTransit();
 });
-$('deleteGroup').addEventListener('click', () => {
-  if (data.groups.length === 1) { alert('Keep at least one group. Rename this one instead.'); return; }
-  const g = activeGroup();
-  if (!confirm(`Delete "${g.name}" and its ${g.sites.length} sites?`)) return;
-  data.groups = data.groups.filter((x) => x.id !== g.id);
-  data.active = data.groups[0].id;
-  save(); render();
+
+// Location: search by city name (Open-Meteo geocoding) or ask the browser
+function setLocation(loc) {
+  settings.location = loc;
+  saveSettings();
+  $('locResults').replaceChildren();
+  $('locQuery').value = '';
+  wxError = '';
+  syncSettingsForm(); tick();
+  refresh('weather'); refresh('sky');
+  loadWeather(true);
+}
+function locMessage(text) {
+  const li = document.createElement('li');
+  li.className = 'hint'; li.textContent = text;
+  $('locResults').replaceChildren(li);
+}
+$('locForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = $('locQuery').value.trim();
+  if (!q) return;
+  locMessage('Searching…');
+  try {
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+    const list = (await res.json()).results || [];
+    if (!list.length) { locMessage(`No places match “${q}”. Try a city name, like Philadelphia.`); return; }
+    $('locResults').replaceChildren(...list.map((p) => {
+      const li = document.createElement('li');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = `<strong>${esc(p.name)}</strong><small>${esc([p.admin1, p.country].filter(Boolean).join(', '))}</small>`;
+      b.addEventListener('click', () => setLocation({ name: [p.name, p.admin1 || p.country].filter(Boolean).join(', '), lat: p.latitude, lon: p.longitude }));
+      li.append(b);
+      return li;
+    }));
+  } catch {
+    locMessage('Place search isn’t responding. Check your connection and try again.');
+  }
 });
-$('backup').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+$('locHere').addEventListener('click', () => {
+  if (!navigator.geolocation) { locMessage('This browser can’t share your location. Search for a city instead.'); return; }
+  locMessage('Asking the browser for your location…');
+  navigator.geolocation.getCurrentPosition(
+    (p) => setLocation({ name: 'Current location', lat: +p.coords.latitude.toFixed(4), lon: +p.coords.longitude.toFixed(4) }),
+    () => locMessage('The browser didn’t share your location. Search for a city instead.'),
+    { timeout: 10000 }
+  );
+});
+
+// Backup and restore everything in one file
+$('backupAll').addEventListener('click', () => {
+  const data = { app: 'start-page', version: 2, settings, layout, sites, notes: store.get('sp.notes', ''), tasks };
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'start-page-sites.json';
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  a.download = 'start-page-backup.json';
   a.click();
   URL.revokeObjectURL(a.href);
 });
-$('restore').addEventListener('click', () => $('restoreFile').click());
+$('restoreAll').addEventListener('click', () => $('restoreFile').click());
 $('restoreFile').addEventListener('change', async (e) => {
   const file = e.target.files[0];
+  e.target.value = '';
   if (!file) return;
   try {
     const parsed = JSON.parse(await file.text());
-    if (!Array.isArray(parsed.groups)) throw new Error('bad file');
-    data = parsed;
-    save(); render();
+    if (Array.isArray(parsed.groups)) {
+      sites = parsed;                       // a sites-only backup from the first version
+    } else if (parsed.app === 'start-page') {
+      settings = { ...DEFAULT_SETTINGS, ...parsed.settings };
+      layout = normalizeLayout(parsed.layout);
+      if (parsed.sites?.groups) sites = parsed.sites;
+      tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+      store.set('sp.notes', parsed.notes || '');
+    } else throw new Error('not a backup');
+    saveSettings(); saveLayout(); saveSites(); saveTasks();
+    applyTheme(true); sky.setEnabled(settings.dust); renderBoard(); syncSettingsForm();
+    loadWeather(true); loadTransit();
+    toast('Restored from backup.');
   } catch {
-    alert('That file isn’t a start page backup. Pick the start-page-sites.json file you saved.');
+    toast('That file isn’t a start page backup. Pick a start-page-backup.json file.');
   }
-  e.target.value = '';
 });
-render();
 
-// ---------- Month calendar ----------
-let shown = new Date();
-shown.setDate(1);
-function renderMonth() {
-  const today = new Date();
-  const y = shown.getFullYear(), m = shown.getMonth();
-  $('monthTitle').innerHTML = `${shown.toLocaleDateString(undefined, { month: 'long' })}`
-    + (y !== today.getFullYear() ? `<small>${y}</small>` : '');
-  const days = $('days');
-  days.innerHTML = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => `<span class="dow">${d}</span>`).join('');
-  const start = new Date(y, m, 1 - new Date(y, m, 1).getDay());
-  for (let i = 0; i < 42; i++) {
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-    if (i >= 35 && d.getMonth() !== m) break;   // skip a sixth row that is entirely next month
-    const a = document.createElement('a');
-    a.href = `https://calendar.google.com/calendar/r/day/${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-    a.textContent = d.getDate();
-    a.title = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
-    if (d.getMonth() !== m) a.classList.add('out');
-    if (d.toDateString() === today.toDateString()) a.classList.add('today');
-    days.appendChild(a);
-  }
-}
-$('prevMonth').addEventListener('click', () => { shown.setMonth(shown.getMonth() - 1); renderMonth(); });
-$('nextMonth').addEventListener('click', () => { shown.setMonth(shown.getMonth() + 1); renderMonth(); });
-$('thisMonth').addEventListener('click', () => { shown = new Date(); shown.setDate(1); renderMonth(); });
-renderMonth();
-
-// ---------- Tonight's sky panel ----------
-const SYNODIC = 29.530588853;                         // days from one new moon to the next
-const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14);  // a new moon used as the starting point
-
-const shortTime = (date) =>
-  date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }).toLowerCase();
-
-function moonPhase(now = new Date()) {
-  const days = (now - KNOWN_NEW_MOON) / 864e5;
-  return ((days % SYNODIC) + SYNODIC) % SYNODIC / SYNODIC;   // 0 new, 0.5 full, back to 1
-}
-
-function moonName(p) {
-  if (p < 0.03 || p > 0.97) return 'New moon';
-  if (p < 0.22) return 'Waxing crescent';
-  if (p < 0.28) return 'First quarter';
-  if (p < 0.47) return 'Waxing gibbous';
-  if (p < 0.53) return 'Full moon';
-  if (p < 0.72) return 'Waning gibbous';
-  if (p < 0.78) return 'Last quarter';
-  return 'Waning crescent';
-}
-
-// Draw the lit part: an outer half circle plus the curved shadow line (terminator)
-function moonPath(p, r = 30) {
-  const k = Math.cos(2 * Math.PI * p);      // 1 at new moon, -1 at full
-  const rx = Math.abs(k) * r;
-  const waxing = p < 0.5;
-  const outer = waxing ? 1 : 0;
-  const term = waxing ? (k > 0 ? 0 : 1) : (k > 0 ? 1 : 0);
-  return `M0 ${-r} A${r} ${r} 0 0 ${outer} 0 ${r} A${rx} ${r} 0 0 ${term} 0 ${-r}Z`;
-}
-
-function renderMoon() {
+// ---------- Clock tick ----------
+let lastMinute = -1, lastDay = new Date().getDate();
+function tick() {
   const now = new Date();
-  const p = moonPhase(now);
-  const lit = Math.round(((1 - Math.cos(2 * Math.PI * p)) / 2) * 100);
-  $('moonLit').setAttribute('d', moonPath(p));
-  $('moonName').textContent = moonName(p);
-
-  const daysToFull = ((0.5 - p + 1) % 1) * SYNODIC;
-  let next;
-  if (daysToFull < 1 || daysToFull > SYNODIC - 1) next = 'Full moon tonight.';
-  else {
-    const full = new Date(now.getTime() + daysToFull * 864e5);
-    next = `Next full moon ${full.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}.`;
-  }
-  $('moonInfo').textContent = `${lit}% lit. ${next}`;
-
   const h = now.getHours();
-  $('skyTitle').textContent = h >= 17 || h < 5 ? 'Tonight’s sky' : 'Today’s sky';
-}
-
-function renderSun(daily) {
-  // Open-Meteo gives local times like "2026-11-03T06:38", which JS reads as local time
-  const rise = new Date(daily.sunrise[0]);
-  const set = new Date(daily.sunset[0]);
-  $('sunrise').textContent = shortTime(rise);
-  $('sunset').textContent = shortTime(set);
-  const mins = Math.round((set - rise) / 60000);
-  $('daylight').textContent = `${Math.floor(mins / 60)}h ${mins % 60}m`;
-}
-
-function renderHours(hourly) {
-  const now = new Date();
-  now.setMinutes(0, 0, 0);
-  const start = hourly.time.findIndex((t) => new Date(t) >= now);
-  if (start < 0) return;
-  const list = $('hours');
-  list.innerHTML = '';
-  for (let i = start; i < start + 8 && i < hourly.time.length; i++) {
-    const t = new Date(hourly.time[i]);
-    const h = t.getHours();
-    const label = i === start ? 'Now' : `${((h + 11) % 12) + 1}${h < 12 ? 'a' : 'p'}`;
-    const rain = hourly.precipitation_probability[i];
-    const li = document.createElement('li');
-    li.innerHTML = `<span class="h">${label}</span>`
-      + `<span class="t">${Math.round(hourly.temperature_2m[i])}°</span>`
-      + `<span class="r">${rain >= 20 ? rain + '%' : ''}</span>`;
-    li.title = rain >= 20 ? `${rain}% chance of rain` : '';
-    list.appendChild(li);
+  const m = pad(now.getMinutes());
+  setAll('hm', settings.use24 ? `${pad(h)}:${m}` : `${((h + 11) % 12) + 1}:${m}`);
+  setAll('sec', settings.seconds ? pad(now.getSeconds()) : '');
+  setAll('ampm', settings.use24 ? '' : h < 12 ? 'am' : 'pm');
+  setAll('greet', greeting(h));
+  setAll('date', now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }));
+  setAll('wxline', wxLine());
+  if (isOn('focus') || focus.endsAt) focusTick();
+  if (now.getMinutes() !== lastMinute) {
+    // Once a minute: theme schedule, the sun's position and train countdowns
+    if (lastMinute !== -1) { applyTheme(true); refresh('sky'); refresh('transit'); }
+    lastMinute = now.getMinutes();
   }
+  if (now.getDate() !== lastDay) { lastDay = now.getDate(); refresh('calendar'); }
 }
 
-renderMoon();
-setInterval(renderMoon, 30 * 60 * 1000);
+// ---------- Keyboard and other tabs ----------
+document.addEventListener('keydown', (e) => {
+  const typing = e.target.closest('input, textarea, select, [contenteditable]');
+  if (e.key === '/' && !typing && !document.querySelector('dialog[open]')) {
+    const q = document.querySelector('.search input');
+    if (q) { e.preventDefault(); q.focus(); }
+  }
+  if (e.key === 'Escape' && arranging && !document.querySelector('dialog[open]')) setArranging(false);
+});
+// Keep several open tabs in step when something changes in one of them
+addEventListener('storage', (e) => {
+  if (e.key === 'sp.notes' && !document.activeElement?.classList.contains('notes-area')) refresh('notes');
+  if (e.key === 'sp.tasks') { tasks = store.get('sp.tasks', []); refresh('tasks'); }
+  if (e.key === 'sp.focus') { focus = store.get('sp.focus', focus); refresh('focus'); }
+  if (e.key === 'np.sites') { sites = store.get('np.sites', sites); refresh('sites'); }
+  if (e.key === 'sp.settings' || e.key === 'sp.layout') {
+    settings = { ...DEFAULT_SETTINGS, ...store.get('sp.settings', {}) };
+    layout = normalizeLayout(store.get('sp.layout', layout));
+    applyTheme(true); sky.setEnabled(settings.dust); renderBoard(); syncSettingsForm();
+  }
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadWeather(); loadTransit(); } });
+
+// ---------- Start ----------
+applyTheme(false);
+sky.setEnabled(settings.dust);
+renderBoard();
+syncSettingsForm();
+tick();
+setInterval(tick, 1000);
+loadWeather();
+setInterval(loadWeather, 5 * 60e3);
+loadTransit();
+setInterval(loadTransit, 60e3);
 </script>
 </body>
 </html>
