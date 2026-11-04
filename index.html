@@ -16,7 +16,8 @@ window.SET_FONTS = {
   paper: 'family=Funnel+Display:wght@300..800&family=Funnel+Sans:wght@300..700',
   fractal: 'family=Unbounded:wght@200..500',
   phosphor: 'family=Martian+Mono:wght@200..500',
-  ashfall: 'family=Cormorant:ital,wght@0,400;1,300;1,400'
+  ashfall: 'family=Cormorant:ital,wght@0,400;1,300;1,400',
+  tiedye: 'family=Recursive:slnt,wght,CASL@-15..0,300..1000,0..1'
 };
 window.loadSetFonts = function (set) {
   const q = SET_FONTS[set];
@@ -648,6 +649,8 @@ try {
   .pv-fractal { --p: radial-gradient(30% 34% at 64% 46%, transparent 55%, rgba(169, 155, 255, 0.95) 62%, transparent 70%), radial-gradient(22% 26% at 40% 58%, transparent 50%, rgba(120, 210, 255, 0.8) 58%, transparent 68%), radial-gradient(60% 60% at 55% 50%, rgba(240, 122, 147, 0.35), transparent 70%), #05030A; }
   .pv-phosphor { --p: linear-gradient(#FFB547, #FFB547) 9px 11px / 36px 3px no-repeat, linear-gradient(#FFB547, #FFB547) 9px 19px / 22px 3px no-repeat, linear-gradient(#FFB547, #FFB547) 9px 30px / 6px 8px no-repeat, repeating-linear-gradient(0deg, transparent 0 2px, rgba(255, 181, 71, 0.1) 2px 3px), #000; }
   .pv-ashfall { --p: radial-gradient(#8F8A86 0.8px, transparent 1.1px) 0 0 / 11px 13px, radial-gradient(#FF8A4C 1px, transparent 1.4px) 5px 7px / 37px 29px, linear-gradient(transparent 55%, rgba(150, 138, 132, 0.3)), #0E0B0B; }
+  .pv-tiedye { --p: radial-gradient(18% 24% at 50% 44%, #F7EDDB 0 70%, transparent 74%), linear-gradient(#F7EDDB, #F7EDDB) 50% 64% / 12% 30% no-repeat,
+    radial-gradient(42% 58% at 50% 50%, transparent 40%, #EBA067 44%, #B98BC2 50%, #66CAD5 57%, #A3E04A 64%, #EFE45F 71%, #8C55BE 80%, #4E3B36 90%), #4E3B36; }
   .sets { grid-template-columns: repeat(4, 1fr); }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px 0; cursor: pointer; }
   .row strong { display: block; font-weight: 500; }
@@ -778,14 +781,20 @@ try {
 
   /* ---------- Theme set: Fractal. A live fractal behind smoked glass with iridescent edges ---------- */
   [data-set="fractal"] { --display: "Unbounded", system-ui, sans-serif; --radius: 28px; }
-  [data-theme="dark"][data-set="fractal"] { --bg: #04030A; --bg2: #04030A; --pane: rgba(6, 4, 14, 0.5); --pane-solid: #0D0A18; }
+  [data-theme="dark"][data-set="fractal"] { --bg: #04030A; --bg2: #04030A; --pane: rgba(6, 4, 14, 0.8); --pane-solid: #0D0A18; }
+  [data-theme="dark"][data-set="fractal"] .clock-meta { text-shadow: 0 0 10px #04030A, 0 0 22px #04030A, 0 0 2px #04030A; }
+  [data-theme="dark"][data-set="fractal"] .widget.bare { background: radial-gradient(80% 75% at 35% 58%, rgba(4, 3, 10, 0.9), rgba(4, 3, 10, 0.6) 55%, transparent 88%); }
+  [data-theme="light"][data-set="fractal"] .widget.bare { background: radial-gradient(75% 70% at 35% 55%, rgba(244, 242, 250, 0.85), rgba(244, 242, 250, 0.4) 60%, transparent 85%); }
   [data-theme="light"][data-set="fractal"] { --bg: #F4F2FA; --bg2: #F4F2FA; --pane: rgba(255, 255, 255, 0.8); --pane-solid: #FFFFFF; }
   [data-theme="light"][data-set="fractal"] .widget { -webkit-backdrop-filter: blur(28px) saturate(1.1) brightness(1.15); backdrop-filter: blur(28px) saturate(1.1) brightness(1.15); }
-  [data-set="fractal"] .widget { border-color: transparent; -webkit-backdrop-filter: blur(28px) saturate(1.5); backdrop-filter: blur(28px) saturate(1.5); }
+  [data-set="fractal"] .widget { border-color: transparent; -webkit-backdrop-filter: blur(36px) saturate(1.4); backdrop-filter: blur(36px) saturate(1.4); }
   [data-set="fractal"] .widget.bare, [data-set="ashfall"] .widget.bare { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+  @property --edge { syntax: "<angle>"; inherits: false; initial-value: 200deg; }
+  @keyframes edge-turn { to { --edge: 560deg; } }
   [data-set="fractal"] .widget:not(.bare)::before {
     content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; opacity: 0.75;
-    background: conic-gradient(from 200deg, rgba(var(--accent-rgb), 0.95), rgba(var(--now-rgb), 0.7), rgba(255, 216, 150, 0.55), rgba(120, 210, 255, 0.7), rgba(var(--accent-rgb), 0.95));
+    animation: edge-turn 16s linear infinite;
+    background: conic-gradient(from var(--edge), rgba(var(--accent-rgb), 0.95), rgba(var(--now-rgb), 0.7), rgba(255, 216, 150, 0.55), rgba(120, 210, 255, 0.7), rgba(var(--accent-rgb), 0.95));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
   }
@@ -842,6 +851,26 @@ try {
   [data-set="ashfall"] .w-head h2 { font: italic 400 1.05rem/1.2 var(--display); color: var(--ink); }
   [data-set="ashfall"] .wx-temp, [data-set="ashfall"] .tc-day, [data-set="ashfall"] .ft, [data-set="ashfall"] .month { font-style: italic; font-variant-numeric: oldstyle-nums; }
   [data-set="ashfall"] .tt { font-family: var(--display); font-style: italic; font-size: 1.2rem; }
+
+  /* ---------- Theme set: Tie-dye. The folded ice-dye shirt, alive ---------- */
+  [data-set="tiedye"] { --display: "Recursive", system-ui, sans-serif; --text: "Recursive", system-ui, sans-serif; --radius: 26px; }
+  [data-set="tiedye"] body { font-variation-settings: "CASL" 0.4; }
+  [data-theme="light"][data-set="tiedye"] {
+    --bg: #F6EEDF; --bg2: #F6EEDF; --ink: #2B1A3A; --ink-rgb: 43, 26, 58; --dim: #5A4766; --faint: #6B5975;
+    --line: rgba(43, 26, 58, 0.1); --line-strong: rgba(43, 26, 58, 0.22); --hover: rgba(43, 26, 58, 0.06);
+    --pane: rgba(255, 250, 242, 0.76); --pane-solid: #FFF9F0; --field: rgba(255, 255, 255, 0.55);
+  }
+  [data-theme="dark"][data-set="tiedye"] { --bg: #0A0710; --bg2: #0A0710; --pane: rgba(14, 10, 20, 0.6); --pane-solid: #130E1A; }
+  [data-set="tiedye"] .widget { border-color: rgba(255, 255, 255, 0.35); -webkit-backdrop-filter: blur(22px) saturate(1.35); backdrop-filter: blur(22px) saturate(1.35); }
+  [data-theme="dark"][data-set="tiedye"] .widget { border-color: rgba(255, 255, 255, 0.1); }
+  [data-set="tiedye"] .widget.bare { border-color: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  [data-set="tiedye"] .time { font-weight: 850; font-variation-settings: "CASL" 1, "slnt" -8; letter-spacing: -0.03em; font-size: calc(var(--fs) * 0.84); }
+  [data-set="tiedye"] .time .sub { font-weight: 500; }
+  [data-theme="light"][data-set="tiedye"] .clock { text-shadow: 0 0 18px rgba(255, 247, 234, 0.95), 0 0 6px rgba(255, 247, 234, 0.95); }
+  [data-theme="light"][data-set="tiedye"] .time { text-shadow: 0 0 40px rgba(255, 247, 234, 0.95), 0 0 12px rgba(255, 247, 234, 0.95); }
+  [data-theme="dark"][data-set="tiedye"] .clock { text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8); }
+  [data-set="tiedye"] .w-head h2 { font-variation-settings: "CASL" 1; font-weight: 700; color: var(--ink); }
+  [data-set="tiedye"] .wx-temp, [data-set="tiedye"] .tc-day, [data-set="tiedye"] .ft { font-weight: 350; font-variation-settings: "CASL" 1; }
 
   /* ---------- Responsive ---------- */
   @media (max-width: 1000px) {
@@ -908,6 +937,7 @@ try {
           <label><input type="radio" name="set" value="fractal"><i class="pv-fractal"></i><span>Fractal</span></label>
           <label><input type="radio" name="set" value="phosphor"><i class="pv-phosphor"></i><span>Phosphor</span></label>
           <label><input type="radio" name="set" value="ashfall"><i class="pv-ashfall"></i><span>Ashfall</span></label>
+          <label><input type="radio" name="set" value="tiedye"><i class="pv-tiedye"></i><span>Tie-dye</span></label>
         </div>
       </div>
       <div class="fieldset">
@@ -1231,73 +1261,182 @@ const sky = (() => {
   };
 })();
 
-// ---------- Fractal background (WebGL) ----------
-// A Julia set whose seed point slowly travels, coloured by "orbit traps": how close each
-// point's path passes a ring and a line. That gives the glowing filaments.
+// ---------- Animated backgrounds (WebGL): Fractal and Tie-dye ----------
 const FX_VERT = 'attribute vec2 p; void main() { gl_Position = vec4(p, 0.0, 1.0); }';
-const FX_FRAG = `precision highp float;
-uniform vec2 res; uniform float t; uniform vec3 a; uniform vec3 b; uniform vec3 bg; uniform float light;
+const FX_HEAD = `precision highp float;
+uniform vec2 res; uniform float t; uniform vec3 a; uniform vec3 b; uniform vec3 bg; uniform float light; uniform vec2 mouse;
+`;
+
+// Fractal: the screen is folded into six mirrored slices like a kaleidoscope, each filled with a
+// slowly morphing Julia set. Every point's path is checked against a ring, a cross and the centre
+// ("orbit traps"); the closer it passes, the brighter it glows. A smaller copy turning the other
+// way sits behind it for depth.
+const FX_FRACTAL = FX_HEAD + `
 vec3 iri(float x) { return 0.5 + 0.5 * cos(6.28318 * (x + vec3(0.0, 0.33, 0.67))); }
-void main() {
-  vec2 q = (gl_FragCoord.xy - 0.5 * res) / min(res.x, res.y);
-  float r = t * 0.015;
-  vec2 uv = mat2(cos(r), -sin(r), sin(r), cos(r)) * q * (2.3 + 0.25 * sin(t * 0.021))
-          + vec2(0.18 * sin(t * 0.011), 0.12 * cos(t * 0.013));
-  float ang = 2.2 + 0.9 * sin(t * 0.017);
-  vec2 c = 0.7885 * vec2(cos(ang), sin(ang));
-  vec2 z = uv;
-  float n = 0.0, ring = 1e3, line = 1e3;
-  for (int i = 0; i < 110; i++) {
+vec2 rot(vec2 p, float r) { return mat2(cos(r), -sin(r), sin(r), cos(r)) * p; }
+vec2 kaleido(vec2 p, float n) {
+  float s = 6.28318 / n;
+  float ang = mod(atan(p.y, p.x) + s * 0.5, s) - s * 0.5;
+  return length(p) * vec2(cos(abs(ang)), sin(abs(ang)));
+}
+vec4 julia(vec2 z, vec2 c) {
+  float ring = 1e3, crs = 1e3, core = 1e3, n = 0.0;
+  for (int i = 0; i < 72; i++) {
     z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
-    ring = min(ring, abs(length(z) - 0.55));
-    line = min(line, abs(z.x * 0.6 + z.y));
+    ring = min(ring, abs(length(z) - 0.62));
+    crs = min(crs, min(abs(z.x), abs(z.y)));
+    core = min(core, dot(z, z));
     if (dot(z, z) > 64.0) break;
     n += 1.0;
   }
-  float s = n >= 110.0 ? 0.0 : clamp((n - log2(log2(dot(z, z)))) / 110.0, 0.0, 1.0);
-  float f1 = exp(-ring * 18.0), f2 = exp(-line * 26.0), glow = pow(s, 0.7);
-  vec3 hue = mix(a, iri(s * 2.0 + ring * 3.0 + t * 0.01), 0.35);
-  float vig = smoothstep(1.25, 0.25, length(q));
-  vec3 tint = (hue * f1 + b * f2 * 0.8 + a * glow * 0.5) * vig;
-  float k = (f1 * 0.9 + f2 * 0.45 + glow * 0.55) * vig;
-  vec3 col = light > 0.5 ? bg - (1.0 - hue) * k * 0.5 : bg + tint;
+  float s = n >= 72.0 ? 0.0 : clamp((n - log2(log2(dot(z, z)))) / 72.0, 0.0, 1.0);
+  return vec4(exp(-ring * 16.0), exp(-crs * 22.0), exp(-sqrt(core) * 7.0), s);
+}
+void main() {
+  vec2 q = (gl_FragCoord.xy - 0.5 * res) / min(res.x, res.y);
+  vec2 m = mouse * 0.06;
+  float ang = 2.1 + 0.8 * sin(t * 0.017);
+  vec2 c = 0.7885 * vec2(cos(ang), sin(ang));
+  vec4 j1 = julia(kaleido(rot(q + m, t * 0.02), 6.0) * (1.9 + 0.3 * sin(t * 0.019)) - vec2(0.35, 0.0), c);
+  vec4 j2 = julia(kaleido(rot(q - m * 0.5, -t * 0.013), 6.0) * 3.4 - vec2(0.2, 0.1), c * 1.02);
+  float shift = t * 0.012;
+  vec3 spectrum = iri(j1.w * 2.5 + shift);
+  vec3 tint = spectrum * j1.x * 1.15
+            + a * j1.y * 0.55
+            + b * pow(j1.z, 3.0) * 1.4
+            + a * pow(j1.w, 0.8) * 0.45
+            + iri(j2.w * 2.0 + shift + 0.5) * (j2.x * 0.35 + j2.y * 0.2);
+  float k = clamp(j1.x * 0.9 + j1.y * 0.45 + pow(j1.w, 0.8) * 0.5 + j2.x * 0.3, 0.0, 1.6);
+  float vig = smoothstep(1.35, 0.2, length(q));
+  vec3 col = light > 0.5 ? bg - (vec3(1.0) - spectrum) * k * 0.42 * vig : bg + tint * vig;
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }`;
+
+// Tie-dye: modelled on a folded ice-dye shirt. The left half mirrors the right, soft rings spread
+// from the centre line with V-shaped points where it was pleated, colours bleed into each other,
+// crumpled folds stay pale with dye pooling beside them, and the rings slowly flow outwards.
+const FX_TIEDYE = FX_HEAD + `
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+vec2 hash2(vec2 p) { return fract(sin(vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, w = 0.5;
+  for (int i = 0; i < 5; i++) { v += w * noise(p); p *= 2.03; w *= 0.5; }
+  return v;
+}
+// Ridged noise: thin, branching lines like the crinkles in crumpled cotton (high on a crinkle)
+float ridge(vec2 p) {
+  float v = 0.0, w = 0.55;
+  for (int i = 0; i < 4; i++) { v += w * (1.0 - abs(noise(p) * 2.0 - 1.0)); p = p * 2.13 + 1.7; w *= 0.5; }
+  return v;
+}
+// The shirt's colours from the centre outwards
+vec3 pal(float i) {
+  if (i < 0.5) return vec3(0.97, 0.93, 0.86);   // cream
+  if (i < 1.5) return vec3(0.93, 0.62, 0.40);   // peach
+  if (i < 2.5) return vec3(0.73, 0.52, 0.75);   // lilac
+  if (i < 3.5) return vec3(0.50, 0.40, 0.36);   // sepia
+  if (i < 4.5) return vec3(0.38, 0.78, 0.84);   // aqua
+  if (i < 5.5) return vec3(0.62, 0.86, 0.30);   // lime
+  if (i < 6.5) return vec3(0.93, 0.88, 0.38);   // butter yellow
+  if (i < 7.5) return vec3(0.55, 0.33, 0.73);   // violet
+  return vec3(0.97, 0.93, 0.86);
+}
+// Neighbouring colours run into each other like wet dye
+vec3 dye(float x) {
+  x = fract(x) * 8.0;
+  float i = floor(x);
+  return mix(pal(i), pal(i + 1.0), smoothstep(0.1, 0.9, fract(x)));
+}
+void main() {
+  vec2 q = (gl_FragCoord.xy - 0.5 * res) / res.y + mouse * 0.015;
+  // Folded down the middle before dyeing, so the left mirrors the right
+  vec2 p = vec2(abs(q.x), q.y);
+  // The dye wicks unevenly through the cloth, and this slowly shifting warp is that wandering
+  vec2 w = vec2(fbm(p * 1.8 + vec2(0.0, t * 0.02)), fbm(p * 1.8 + vec2(5.2, -t * 0.017))) - 0.5;
+  vec2 pw = p + w * 0.45;
+  // Tall rings with soft V-shaped points where the fabric was pleated
+  float v = abs(fract(pw.y * 4.0 - pw.x * 2.5) - 0.5);
+  float ring = length(vec2(pw.x * 1.2, pw.y * 0.7)) + v * 0.06;
+  float shift = -t * 0.015 + w.x * 0.3;
+  // Two slightly different reads of the rings, blended, so neighbouring colours bleed together
+  vec3 colour = mix(dye(ring * 2.2 + shift), dye(ring * 2.2 + shift + (w.y - 0.1) * 0.35), 0.4);
+  // How much dye soaked in: patchy, never even
+  float soak = 0.62 + 0.38 * fbm(q * 6.0 + w * 3.0);
+  // Crumpled folds: the tightest crinkles stay pale, and dye pools darker right beside them
+  float crinkle = ridge(q * 3.4 + w * 1.8);
+  float fold = smoothstep(0.74, 0.92, crinkle);
+  float pool = smoothstep(0.52, 0.74, crinkle) * (1.0 - fold);
+  soak = soak * (1.0 - fold * 0.8) + pool * 0.22;
+  colour *= 1.0 - pool * 0.22;
+  // Ice-dye grain: tiny crystals of stronger and weaker pigment
+  soak = clamp(soak + (noise(q * 42.0 + w * 5.0) - 0.5) * 0.16, 0.0, 1.0);
+  vec3 col = light > 0.5
+    ? mix(vec3(0.985, 0.965, 0.93), colour, soak)                 // dye on white cotton
+    : mix(vec3(0.03, 0.024, 0.04), pow(colour, vec3(1.25)) * 0.82, soak * 0.92);  // the same dye on a black shirt
+  float vig = smoothstep(1.4, 0.35, length(q * vec2(0.75, 1.0)));
+  col *= light > 0.5 ? 0.93 + 0.07 * vig : 0.72 + 0.28 * vig;
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
 const fx = (() => {
   const canvas = $('fx');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const born = performance.now() - 90000;          // start partway into the slow morph
-  let gl = null, u = {}, raf = 0, running = false, last = 0;
-  let pal = null;
-  function setup() {
+  const SOURCES = { fractal: FX_FRACTAL, tiedye: FX_TIEDYE };
+  // Render below full resolution: the glass panes blur it anyway, and it keeps the laptop cool
+  const SCALE = { fractal: 0.42, tiedye: 0.7 };
+  const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
+  let gl = null, buf = null, progs = {}, kind = '', u = null, raf = 0, running = false, last = 0, pal = null;
+  addEventListener('pointermove', (e) => { mouse.tx = (e.clientX / innerWidth) * 2 - 1; mouse.ty = 1 - (e.clientY / innerHeight) * 2; });
+
+  function init() {
     gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power' });
     if (!gl) return false;
+    buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);   // one triangle covers the screen
+    return true;
+  }
+  function program(k) {
+    if (progs[k]) return progs[k];
     const shader = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); return s; };
     const prog = gl.createProgram();
     gl.attachShader(prog, shader(gl.VERTEX_SHADER, FX_VERT));
-    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FX_FRAG));
+    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, SOURCES[k]));
     gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { gl = null; return false; }
-    gl.useProgram(prog);
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);   // one triangle covers the screen
-    const loc = gl.getAttribLocation(prog, 'p');
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    for (const n of ['res', 't', 'a', 'b', 'bg', 'light']) u[n] = gl.getUniformLocation(prog, n);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
+    const p = { prog, loc: gl.getAttribLocation(prog, 'p') };
+    for (const n of ['res', 't', 'a', 'b', 'bg', 'light', 'mouse']) p[n] = gl.getUniformLocation(prog, n);
+    return (progs[k] = p);
+  }
+  function use(k) {
+    const p = program(k);
+    if (!p) return false;
+    gl.useProgram(p.prog);
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.enableVertexAttribArray(p.loc);
+    gl.vertexAttribPointer(p.loc, 2, gl.FLOAT, false, 0, 0);
+    u = p; kind = k;
     return true;
   }
-  // Render at half resolution: the glass panes blur it anyway, and it keeps the laptop cool
   function size() {
-    const k = Math.min(window.devicePixelRatio || 1, 2) * 0.5;
+    const k = Math.min(window.devicePixelRatio || 1, 2) * SCALE[kind];
     canvas.width = Math.round(innerWidth * k); canvas.height = Math.round(innerHeight * k);
     gl.viewport(0, 0, canvas.width, canvas.height);
   }
   function draw(now) {
+    mouse.x += (mouse.tx - mouse.x) * 0.04;   // ease towards the pointer so it drifts, never jumps
+    mouse.y += (mouse.ty - mouse.y) * 0.04;
     gl.uniform2f(u.res, canvas.width, canvas.height);
     gl.uniform1f(u.t, (now - born) / 1000);
     gl.uniform3fv(u.a, pal.a); gl.uniform3fv(u.b, pal.b); gl.uniform3fv(u.bg, pal.bg);
     gl.uniform1f(u.light, pal.light);
+    gl.uniform2f(u.mouse, mouse.x, mouse.y);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function loop(now) {
@@ -1305,13 +1444,13 @@ const fx = (() => {
     if (now - last > 40) { draw(now); last = now; }
     raf = requestAnimationFrame(loop);
   }
-  addEventListener('resize', () => { if (gl && !canvas.hidden) { size(); draw(performance.now()); } });
+  addEventListener('resize', () => { if (gl && u && !canvas.hidden) { size(); draw(performance.now()); } });
   return {
     // Returns false when WebGL isn't available, so the page can fall back to dust
-    set(active, moving, palette) {
+    set(active, moving, palette, which) {
       canvas.hidden = !active;
       if (!active) { running = false; cancelAnimationFrame(raf); return false; }
-      if (!gl && !setup()) { canvas.hidden = true; return false; }
+      if ((!gl && !init()) || (kind !== which && !use(which))) { canvas.hidden = true; return false; }
       pal = palette; size(); draw(performance.now());
       if (moving && !still) { if (!running) { running = true; raf = requestAnimationFrame(loop); } }
       else { running = false; cancelAnimationFrame(raf); }
@@ -1330,7 +1469,8 @@ const SETS = {
   paper:    { name: 'Paper', accent: 'cobalt', bg: 'none' },
   fractal:  { name: 'Fractal', accent: 'violet', bg: 'fractal' },
   phosphor: { name: 'Phosphor', accent: 'amber', bg: 'none' },
-  ashfall:  { name: 'Ashfall', accent: 'ember', bg: 'ash' }
+  ashfall:  { name: 'Ashfall', accent: 'ember', bg: 'ash' },
+  tiedye:   { name: 'Tie-dye', accent: 'violet', bg: 'tiedye' }
 };
 const rgbList = (s) => s.split(',').map((v) => Number(v) / 255);
 function applyTheme(animate) {
@@ -1352,13 +1492,14 @@ function applyTheme(animate) {
   });
   const bg = SETS[settings.set].bg || 'dust';
   const light = theme === 'light';
-  const fractal = bg === 'fractal' && fx.set(true, settings.dust, {
-    a: rgbList(accent), b: rgbList(now), light: light ? 1 : 0,
-    bg: light ? [0.957, 0.949, 0.98] : [0.016, 0.012, 0.04]
-  });
-  if (bg !== 'fractal') fx.set(false);
+  const shader = bg === 'fractal' || bg === 'tiedye';
+  const BACKS = { fractal: [[0.957, 0.949, 0.98], [0.016, 0.012, 0.04]], tiedye: [[0.965, 0.933, 0.875], [0.04, 0.027, 0.063]] };
+  const drawn = shader && fx.set(true, settings.dust, {
+    a: rgbList(accent), b: rgbList(now), light: light ? 1 : 0, bg: BACKS[bg][light ? 0 : 1]
+  }, bg);
+  if (!shader) fx.set(false);
   sky.setStyle(bg === 'ash' ? 'ash' : 'dust');
-  sky.setEnabled(settings.dust && (bg === 'dust' || bg === 'ash' || (bg === 'fractal' && !fractal)));
+  sky.setEnabled(settings.dust && (bg === 'dust' || bg === 'ash' || (shader && !drawn)));
 }
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => applyTheme(true));
 
@@ -1477,7 +1618,8 @@ function jsonp(url) {
   return new Promise((resolve, reject) => {
     const cb = 'septa_' + uid();
     const s = document.createElement('script');
-    const done = () => { clearTimeout(timer); delete window[cb]; s.remove(); };
+    // Leave a do-nothing callback behind, so a reply that arrives after the timeout is ignored quietly
+    const done = () => { clearTimeout(timer); window[cb] = () => { delete window[cb]; }; s.remove(); };
     const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, 10000);
     window[cb] = (data) => { done(); resolve(data); };
     s.onerror = () => { done(); reject(new Error('network')); };
