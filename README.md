@@ -18,14 +18,6 @@ Each set changes type, widget shapes and the background, not just colors.
 | Phosphor | Dark only | A terminal in your accent color |
 | Ashfall | Dark only | Falling ash, rising embers, old-style numerals |
 
-## BrowserOS tasks button
-
-BrowserOS doesn't let websites open its own pages, so on its own the button copies the address for you to paste. To make it open Scheduled Tasks in one click, load the small helper extension once:
-
-1. Open `chrome://extensions` in BrowserOS and turn on **Developer mode**.
-2. Click **Load unpacked** and pick the `browseros-helper` folder from this repository.
-3. Reload the start page.
-
 ## Storage
 
 Everything lives in `index.html`. Your setup is saved in the browser's local storage, so use **Settings > Backup** to keep a copy.

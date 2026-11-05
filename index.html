@@ -378,14 +378,6 @@ try {
   }
   .engines button:hover { color: var(--ink); }
   .engines button[aria-pressed="true"] { color: var(--on-accent); background: var(--accent); font-weight: 500; }
-  .os-link {
-    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
-    height: 28px; padding: 0 12px; border-radius: 999px;
-    color: var(--dim); font-size: 0.8125rem; text-decoration: none; white-space: nowrap;
-    box-shadow: inset 0 0 0 1px var(--line-strong);
-  }
-  .os-link:hover { color: var(--ink); background: var(--hover); }
-  .os-link svg { width: 15px; height: 15px; }
   @container (max-width: 560px) {
     .engines { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; flex: none; }
     .engines > * { flex: none; }
@@ -772,7 +764,6 @@ try {
   [data-set="paper"] .field-search:focus-within { border-color: var(--accent); }
   [data-set="paper"] .engines button { border-radius: 0; padding: 0 2px; margin-right: 12px; }
   [data-set="paper"] .engines button[aria-pressed="true"] { background: none; color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); font-weight: 600; }
-  [data-set="paper"] .os-link { border-radius: 0; }
   [data-set="paper"] .tab[aria-selected="true"] { background: none; box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
   [data-set="paper"] .ficon { border-radius: 0; background: none; box-shadow: inset 0 0 0 1px var(--line); }
   [data-set="paper"] .days a.today { border-radius: 0; }
@@ -822,7 +813,7 @@ try {
   [data-set="phosphor"] .w-head h2::before { content: "[ "; }
   [data-set="phosphor"] .w-head h2::after { content: " ]"; }
   [data-set="phosphor"] .time { font-weight: 300; font-size: calc(var(--fs) * 0.72); letter-spacing: -0.08em; text-shadow: 0 0 18px rgba(var(--accent-rgb), 0.55); }
-  [data-set="phosphor"] :is(button, .os-link, .field-search, .input, .ficon, .days a, .sizes, .seg, .seg span, .switch, .task-input, .proj, .proj-add, .tile a, .tile .add, .modal, .toast, .arrange-bar, .bars i, .proj .bar, .proj .bar i) { border-radius: 0 !important; }
+  [data-set="phosphor"] :is(button, .field-search, .input, .ficon, .days a, .sizes, .seg, .seg span, .switch, .task-input, .proj, .proj-add, .tile a, .tile .add, .modal, .toast, .arrange-bar, .bars i, .proj .bar, .proj .bar i) { border-radius: 0 !important; }
   [data-set="phosphor"] .switch::after { border-radius: 0; }
   [data-set="phosphor"] .field-search { border: 0; background: none; padding-left: 0; gap: 0; }
   [data-set="phosphor"] .field-search > svg, [data-set="phosphor"] .field-search kbd { display: none; }
@@ -1123,7 +1114,6 @@ const ICONS = {
   left: '<path d="M15 6l-6 6 6 6"/>',
   right: '<path d="M9 6l6 6-6 6"/>',
   reset: '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>',
-  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   pin: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'
 };
@@ -1836,15 +1826,12 @@ const ENGINES = {
   chatgpt:    { label: 'ChatGPT', url: 'https://chatgpt.com/?q=', hint: 'Ask ChatGPT' },
   claude:     { label: 'Claude', url: 'https://claude.ai/new?q=', hint: 'Ask Claude' }
 };
-// BrowserOS's built-in Scheduled Tasks page (part of its AI extension)
-const BROWSEROS_TASKS = 'chrome-extension://bflpfmnmnokmjhmgnolecpppdbdophmk/app.html#/scheduled';
 // The Phosphor theme shows search as a shell prompt, like josh@lansdowne:~$
 const promptText = () => `${(settings.name.trim() || 'you').toLowerCase().replace(/\s+/g, '')}@${shortPlace().toLowerCase().replace(/\s+/g, '-')}:~$`;
 function renderSearch(b) {
   if (!ENGINES[settings.engine]) settings.engine = 'google';
   b.innerHTML = `<form class="search" role="search">
-    <div class="engines">${Object.entries(ENGINES).map(([k, e]) => `<button type="button" data-engine="${k}" aria-pressed="${k === settings.engine}">${e.label}</button>`).join('')}
-      <button class="os-link" type="button" title="Copy the address of BrowserOS scheduled tasks">${ico('clock')}BrowserOS tasks</button></div>
+    <div class="engines">${Object.entries(ENGINES).map(([k, e]) => `<button type="button" data-engine="${k}" aria-pressed="${k === settings.engine}">${e.label}</button>`).join('')}</div>
     <label class="field-search">${ico('search')}<span class="prompt">${esc(promptText())}</span><input type="search" name="q" autocomplete="off" aria-label="Search" placeholder="${ENGINES[settings.engine].hint}"><kbd title="Press / anywhere to search">/</kbd></label>
   </form>`;
   const form = b.querySelector('form');
@@ -1852,18 +1839,6 @@ function renderSearch(b) {
   form.querySelector('.engines').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn) return;
-    if (btn.classList.contains('os-link')) {
-      // With the Start page helper extension installed, it opens the page for us
-      if (document.documentElement.dataset.browserosHelper) {
-        window.postMessage({ type: 'start-page:open', route: 'scheduled' }, location.origin);
-        return;
-      }
-      // Without it: BrowserOS won't let a website open its own pages, but typing the address works
-      toast(copyText(BROWSEROS_TASKS)
-        ? 'Address copied. Press Ctrl+L, then Ctrl+V and Enter. Bookmark the page for one-click access.'
-        : 'Copying didn’t work here. Open a new tab with Ctrl+T and pick Scheduled Tasks.');
-      return;
-    }
     settings.engine = btn.dataset.engine;
     saveSettings();
     form.querySelectorAll('.engines button').forEach((x) => x.setAttribute('aria-pressed', String(x === btn)));
