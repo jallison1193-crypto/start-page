@@ -198,7 +198,7 @@ scene.define('grimoire', (S) => {
   const candle = document.createElement('div');
   candle.className = 'gm-candle';
   S.over.append(candle);
-  let W = 0, H = 0, paper = '', cx = 0, cy = 0, tcx = 0, tcy = 0;
+  let W = 0, H = 0, paper = '', paperImg = null, paperReady = Promise.resolve(), cx = 0, cy = 0, tcx = 0, tcy = 0;
   let turning = null, drag = null, wheelTotal = 0, wheelTimer = 0, wheelRest = false, restTimer = 0;
   let ghostX = -1e4, ghostY = -1e4, ghostWords = [];
   const wrap = $('pages');
@@ -217,7 +217,15 @@ scene.define('grimoire', (S) => {
     paintShader(canvas, VELLUM, { res: [canvas.width, canvas.height], book: [g.l, g.t, g.r, g.b], spine: W < 760 ? -9999 : W / 2, dpr });
     if (paper) URL.revokeObjectURL(paper);
     paper = '';
-    canvas.toBlob((blob) => { if (blob) paper = URL.createObjectURL(blob); }, 'image/jpeg', 0.92);
+    // Decode the vellum up front and keep it held. Otherwise the first frames of a turn drew the
+    // leaf before its paper had loaded, and the page underneath showed straight through it.
+    paperReady = new Promise((done) => canvas.toBlob((blob) => {
+      if (!blob) return done();
+      paper = URL.createObjectURL(blob);
+      paperImg = new Image();
+      paperImg.src = paper;
+      paperImg.decode().catch(() => {}).then(done);
+    }, 'image/jpeg', 0.92));
   }
   // Borders, bottom scenes and hidden writing belong to each page, so they turn with it
   function dress() {
@@ -277,8 +285,15 @@ scene.define('grimoire', (S) => {
   }
 
   // ---- The leaf
-  const STRIPS = 9;
-  function slice(page, x, y, w, h) {
+  const STRIPS = 7;
+  // The pieces of a page worth leaving out of a slice that can't show them
+  const PIECES = '.widget, .gm-art > :not(.gm-ghost)';
+  // Where each piece sits, measured once per turn rather than once per slice
+  function measure(page) {
+    const o = page.getBoundingClientRect().left;
+    return [...page.querySelectorAll(PIECES)].map((el) => { const r = el.getBoundingClientRect(); return [r.left - o, r.right - o]; });
+  }
+  function slice(page, spots, x, y, w, h) {
     const box = document.createElement('div');
     box.className = 'gm-slice';
     box.style.cssText = `width:${w}px;height:${h}px;background:url(${paper}) ${-x}px ${-y}px / ${W}px ${H}px;`;
@@ -288,6 +303,14 @@ scene.define('grimoire', (S) => {
     c.removeAttribute('data-page');
     c.style.cssText = `position:absolute;left:${-x}px;top:0;width:${W}px;height:${h}px;visibility:visible;overflow:hidden;`;
     c.querySelector('.gm-ghost')?.remove();
+    // A narrow strip only shows a sliver of the page. Copying every widget into every strip
+    // made one turn build nearly ten thousand elements in a single frame, which is what stuttered.
+    c.querySelectorAll(PIECES).forEach((el, i) => {
+      const s = spots[i];
+      // Emptied rather than removed, so the grid keeps every other widget where it was
+      if (s && (s[1] < x - 2 || s[0] > x + w + 2)) { el.replaceChildren(); el.style.visibility = 'hidden'; }
+    });
+    c.querySelectorAll('canvas, iframe, video').forEach((el) => el.remove());   // copies of these come out blank
     box.append(c);
     return box;
   }
@@ -297,8 +320,9 @@ scene.define('grimoire', (S) => {
     const h = rect.height, half = W / 2, sw = Math.ceil((geometry().r - half) / STRIPS);   // the leaf stops at the book's edge
     const rig = document.createElement('div');
     rig.className = 'gm-rig';
-    const baseL = slice(a, 0, rect.top, half, h); baseL.style.position = 'absolute'; baseL.style.left = '0';
-    const baseR = slice(b, half, rect.top, half, h); baseR.style.position = 'absolute'; baseR.style.left = half + 'px';
+    const sa = measure(a), sb = measure(b);
+    const baseL = slice(a, sa, 0, rect.top, half, h); baseL.style.position = 'absolute'; baseL.style.left = '0';
+    const baseR = slice(b, sb, half, rect.top, half, h); baseR.style.position = 'absolute'; baseR.style.left = half + 'px';
     const shadeL = document.createElement('i'), shadeR = document.createElement('i');
     shadeL.className = 'gm-under l'; shadeR.className = 'gm-under r';
     baseL.append(shadeL); baseR.append(shadeR);
@@ -309,9 +333,9 @@ scene.define('grimoire', (S) => {
       const s = document.createElement('div');
       s.className = 'gm-strip';
       s.style.cssText = `width:${sw}px;height:${h}px;left:${i === 0 ? half : sw}px;`;
-      const front = slice(a, half + i * sw, rect.top, sw + 1, h);
+      const front = slice(a, sa, half + i * sw, rect.top, sw + 1, h);
       const backX = half - (i + 1) * sw;
-      const back = slice(b, backX, rect.top, sw + 1, h);
+      const back = slice(b, sb, backX, rect.top, sw + 1, h);
       front.classList.add('front'); back.classList.add('back');
       const fs = document.createElement('i'), bs = document.createElement('i');
       fs.className = bs.className = 'gm-face-shade';
@@ -349,9 +373,19 @@ scene.define('grimoire', (S) => {
     const a = forward ? pagesEls[from] : pagesEls[to];
     const b = forward ? pagesEls[to] : pagesEls[from];
     if (!a || !b) return null;
-    pagesEls.forEach((p) => p.classList.remove('gm-on'));
     const r = buildRig(a, b);
-    return { r, forward, from, to, p: forward ? 0 : 1 };
+    const p = forward ? 0 : 1;
+    pose(r, p);   // a backward turn starts with the leaf already over on the left
+    // The copies' pictures need a moment to decode. Showing the leaf before then made the ivy and
+    // icons blink out for a frame, so the real page stays up underneath until the leaf is whole.
+    r.rig.style.opacity = '0';
+    const decoded = [...r.rig.querySelectorAll('img')].map((img) => img.decode().catch(() => {}));
+    const ready = Promise.race([Promise.all([paperReady, ...decoded]), new Promise((ok) => setTimeout(ok, 150))]).then(() => {
+      if (!r.rig.isConnected) return;
+      r.rig.style.opacity = '';
+      pagesEls.forEach((p) => p.classList.remove('gm-on'));
+    });
+    return { r, forward, from, to, p, ready };
   }
   function finishTurn(tr, landed) {
     tr.r.rig.remove();
@@ -360,7 +394,10 @@ scene.define('grimoire', (S) => {
   }
   function animateTurn(tr, target, ms) {
     turning = tr;
-    const begin = performance.now(), start = tr.p;
+    tr.ready.then(() => requestAnimationFrame((t) => runTurn(tr, target, ms, t)));
+  }
+  function runTurn(tr, target, ms, begin) {
+    const start = tr.p;
     const run = (t) => {
       const k = Math.min(1, (t - begin) / ms);
       tr.p = start + (target - start) * (1 - Math.pow(1 - k, 2.2));
