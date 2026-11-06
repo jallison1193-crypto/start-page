@@ -28,7 +28,7 @@
   --dust-alpha: 1;
 }
 [data-theme="light"] {
-  color-scheme: light;
+  color-scheme: only light;   /* "only" also keeps the browser's own auto dark mode from repainting a light theme */
   --bg: #EEF2F8;
   --bg2: #DFE6F0;
   --ink: #0D1524;

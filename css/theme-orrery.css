@@ -2,7 +2,7 @@
 [data-set="orrery"] {
   --display: "Marcellus", "Trajan Pro", Georgia, serif;
   --text: "Spectral", Georgia, serif;
-  --gap: 22px; --radius: 2px;
+  --gap: 22px; --radius: 2px; --page-reserve: 40px;
   --bg: #05090E; --bg2: #05090E; --ink: #EFE6CF; --dim: #B9B19C; --faint: #918A77;
   --line: rgba(214, 178, 98, 0.16); --line-strong: rgba(214, 178, 98, 0.34);
   --pane: rgba(5, 9, 14, 0.82); --pane-solid: #070C12; --field: rgba(214, 178, 98, 0.06); --hover: rgba(214, 178, 98, 0.09);
@@ -53,12 +53,31 @@
 .or-tip { position: absolute; left: 0; top: 0; padding: 5px 10px; background: #070C12; color: #EFE6CF; font: 400 0.875rem/1.3 "Spectral", Georgia, serif; box-shadow: inset 0 0 0 1px rgba(214, 178, 98, 0.45); white-space: nowrap; pointer-events: none; }
 /* The date the model is showing, on a small brass plate under the instrument */
 .or-plaque {
-  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); pointer-events: none;
+  position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); pointer-events: none;
   padding: 6px 18px 7px; font: 400 1.0625rem/1 "Marcellus", Georgia, serif; color: #2A1D08; font-variant-numeric: tabular-nums;
   background: linear-gradient(180deg, #F4DC9A, #C9A253 55%, #A9843C); border-radius: 2px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -1px 0 rgba(0, 0, 0, 0.25), 0 6px 14px rgba(0, 0, 0, 0.6);
 }
 .or-tip[hidden], .or-plaque[hidden] { display: none; }
+
+/* Put the widgets away to see the whole instrument. The page's own controls go with them. */
+.or-view {
+  position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); pointer-events: auto;
+  display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 14px 0 11px;
+  border: 0; border-radius: 2px; background: rgba(5, 9, 14, 0.72); color: #D9B465; cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(214, 178, 98, 0.3); font: 400 0.875rem/1 "Spectral", Georgia, serif;
+  transition: color 0.2s, box-shadow 0.2s;
+}
+.or-view:hover { color: #F2E2B4; box-shadow: inset 0 0 0 1px rgba(214, 178, 98, 0.6); }
+.or-view:focus-visible { outline: 2px solid #D9B465; outline-offset: 3px; }
+.or-view .i { width: 16px; height: 16px; }
+[data-set="orrery"] .pages, [data-set="orrery"] .topbar { transition: opacity 0.35s ease, visibility 0s linear 0s; }
+.or-viewing[data-set="orrery"] .pages, .or-viewing[data-set="orrery"] .topbar { opacity: 0; visibility: hidden; transition: opacity 0.35s ease, visibility 0s linear 0.35s; }
+.or-viewing[data-set="orrery"] body { cursor: grab; }
+@media (prefers-reduced-motion: reduce) {
+  [data-set="orrery"] .pages, [data-set="orrery"] .topbar, .or-viewing[data-set="orrery"] .pages, .or-viewing[data-set="orrery"] .topbar { transition: none; }
+  .or-viewing[data-set="orrery"] body { cursor: auto; }
+}
 .pv-orrery { --p:
   radial-gradient(circle at 50% 46%, #FFF2C4 0 2px, #C08A2E 3px, transparent 3.6px),
   radial-gradient(circle at 74% 62%, #9FD0E0 0 1.6px, transparent 2.2px),
