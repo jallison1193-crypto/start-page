@@ -1,0 +1,20 @@
+'use strict';
+// ---------- Start ----------
+initPages();
+applyTheme(false);
+renderBoard();
+syncSettingsForm();
+tick();
+setInterval(tick, 1000);
+loadWeather();
+setInterval(loadWeather, 5 * 60e3);
+loadTransit();
+setInterval(loadTransit, 60e3);
+loadGitHub();
+setInterval(loadGitHub, 5 * 60e3);
+loadRoutes();
+setInterval(loadRoutes, 60e3);
+loadNews();
+setInterval(loadNews, 5 * 60e3);
+loadExtras();
+setInterval(loadExtras, 30e3);

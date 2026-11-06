@@ -1,25 +1,36 @@
 # Start page
 
-A personal browser start page built as a snap grid of widgets: clock, search (Google, Gemini, DuckDuckGo, ChatGPT, Claude), weather, moon and daylight, live SEPTA trains, site groups, projects with GitHub activity, calendar, quick note, tasks and a silent focus timer.
-
-- **Arrange** lets you drag widgets around and pick one of four sizes (Small, Medium, Large, Wide). Everything snaps to the grid.
-- **Settings** has theme sets, light, dark, match Windows or a schedule (sunrise to sunset, or set times), accent colors, widget on/off, weather location, train station, GitHub username and backup.
-
-## Theme sets
-
-Each set changes type, widget shapes and the background, not just colors.
-
-| Set | Modes | What it is |
-|---|---|---|
-| Deep space, Nebula, Aurora, Lunar | Light and dark | Glass panes over drifting dust or a soft glow |
-| Paper | Light and dark (Graphite) | Minimal: no boxes, crop marks, big type |
-| Fractal | Light and dark | A live six-fold kaleidoscope fractal behind smoked glass |
-| Tie-dye | Light and dark | A living ice-dye shirt: mirrored fold, bleeding colours, crumple creases |
-| Phosphor | Dark only | A terminal in your accent color |
-| Ashfall | Dark only | Falling ash, rising embers, old-style numerals |
-
-## Storage
-
-Everything lives in `index.html`. Your setup is saved in the browser's local storage, so use **Settings > Backup** to keep a copy.
+A personal browser start page: swipeable pages of widgets on a snap grid.
 
 Live at https://jallison1193-crypto.github.io/start-page/
+
+## Using it
+
+- **Pages:** swipe, use the left and right arrow keys, or click the tabs at the top. Add a page with +, double-click a tab to rename it, drag tabs to reorder. Turn off **Settings > Pages > Swipe between pages** to stack them and scroll instead.
+- **Arrange:** drag widgets, pick one of four sizes, or send a widget to another page.
+- **Sites:** each Sites widget has its own groups. Use the pencil on a group to rename or delete it, **+ Group** to add one, **+ Site** to add a link. Add a second Sites widget in Settings to keep Work and Personal apart.
+- **Routes:** add each bus, trolley, metro or Regional Rail ride in order, and the widget works out when to leave and when you'll arrive, including transfers and live delays.
+- **Greeting:** pick a style or write your own lines for each time of day in Settings. Click the greeting for another.
+
+## Widgets
+
+Clock, Search, Weather, Sky, Routes, Station board, Sites, Quick note, Projects, News, Calendar, Tasks, Focus timer, Prices, Now reading, Course tracker, Prompts, Countdown, Should I?, Weeks remaining, Died on this day, Air quality, Earthquakes, Rocket launches, Space station.
+
+## How it's built
+
+No build step. Open `index.html` through any web server.
+
+| Path | What it holds |
+|---|---|
+| `css/app.css`, `css/widgets.css` | Styles and theme sets |
+| `js/core.js` | Helpers and settings |
+| `js/backgrounds.js` | Animated backgrounds |
+| `js/app.js` | Core widgets, dialogs and Settings |
+| `js/pages.js` | Pages, the snap grid and arranging |
+| `js/greetings.js` | Greeting styles |
+| `js/routes.js` | SEPTA route tracker |
+| `js/news.js`, `js/prices.js`, `js/extras.js` | Other widgets |
+| `scripts/fetch-news.mjs` | Collects headlines into `data/news.json`, run every 30 minutes by GitHub Actions |
+| `scripts/fetch-stops.mjs` | Saves SEPTA stop lists into `data/stops/`, run monthly |
+
+Your setup is saved in the browser's local storage, so use **Settings > Backup** to keep a copy.
