@@ -114,7 +114,21 @@ scene.define('orrery', (S) => {
   tip.className = 'or-tip'; tip.hidden = true; tip.setAttribute('aria-hidden', 'true');
   const plaque = document.createElement('div');
   plaque.className = 'or-plaque'; plaque.hidden = true; plaque.setAttribute('aria-hidden', 'true');
-  S.over.append(tip, plaque);
+  // A switch to put the widgets away and look at the instrument on its own
+  const view = document.createElement('button');
+  view.type = 'button'; view.className = 'or-view';
+  S.over.append(tip, plaque, view);
+  let viewing = false;
+  function setView(on) {
+    viewing = on;
+    document.documentElement.classList.toggle('or-viewing', on);
+    view.setAttribute('aria-pressed', String(on));
+    view.innerHTML = `${ico(on ? 'eye' : 'eyeoff')}<span>${on ? 'Show widgets' : 'Hide widgets'}</span>`;
+  }
+  setView(false);
+  view.addEventListener('click', () => setView(!viewing));
+  const onKey = (e) => { if (viewing && e.key === 'Escape' && !document.querySelector('dialog[open]')) setView(false); };
+  addEventListener('keydown', onKey);
 
   const TILT = 0.34;                         // how far the plane is foreshortened: seen from a little above
   const COS_TILT = Math.sqrt(1 - TILT * TILT);
@@ -392,7 +406,7 @@ scene.define('orrery', (S) => {
   }
 
   // ---- Cranking: hold the background and the model runs forward, faster the longer you hold
-  const ignore = (el) => el?.closest?.('.widget, .topbar, button, a, input, select, textarea, dialog, .sheet, .modal, .arrange-bar');
+  const ignore = (el) => el?.closest?.('.widget, .topbar, button, a, input, select, textarea, dialog, .sheet, .modal, .arrange-bar, .or-view');
   function onDown(e) {
     if (S.still || e.button || arranging || ignore(e.target)) return;
     hold = { x: e.clientX, y: e.clientY, at: performance.now(), timer: setTimeout(() => {
@@ -472,7 +486,8 @@ scene.define('orrery', (S) => {
       removeEventListener('pointerup', release);
       removeEventListener('pointercancel', release);
       removeEventListener('blur', release);
-      document.documentElement.classList.remove('or-cranking');
+      removeEventListener('keydown', onKey);
+      document.documentElement.classList.remove('or-cranking', 'or-viewing');
     }
   };
 });

@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Every theme here sets its own colours, so dark-mode extensions would only muddy them -->
+<meta name="darkreader-lock">
 <title>Home</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,12 +59,13 @@ try {
   loadSetFonts(s.set);
 } catch {}
 </script>
-<link rel="stylesheet" href="css/app.css">
-<link rel="stylesheet" href="css/widgets.css">
-<link rel="stylesheet" href="css/theme-orrery.css">
-<link rel="stylesheet" href="css/theme-grimoire.css">
-<link rel="stylesheet" href="css/theme-spirit.css">
-<link rel="stylesheet" href="css/theme-remaining.css">
+<!-- ?v= makes a browser fetch fresh copies after an update, instead of mixing new and old files. Change it whenever any css or js file changes. -->
+<link rel="stylesheet" href="css/app.css?v=20261106b">
+<link rel="stylesheet" href="css/widgets.css?v=20261106b">
+<link rel="stylesheet" href="css/theme-orrery.css?v=20261106b">
+<link rel="stylesheet" href="css/theme-grimoire.css?v=20261106b">
+<link rel="stylesheet" href="css/theme-spirit.css?v=20261106b">
+<link rel="stylesheet" href="css/theme-remaining.css?v=20261106b">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -313,20 +316,20 @@ try {
   </form>
 </dialog>
 
-<script src="js/core.js"></script>
-<script src="js/backgrounds.js"></script>
-<script src="js/app.js"></script>
-<script src="js/greetings.js"></script>
-<script src="js/pages.js"></script>
-<script src="js/alerts.js"></script>
-<script src="js/news.js"></script>
-<script src="js/prices.js"></script>
-<script src="js/extras.js"></script>
-<script src="js/scene-core.js"></script>
-<script src="js/scene-orrery.js"></script>
-<script src="js/scene-grimoire.js"></script>
-<script src="js/scene-spirit.js"></script>
-<script src="js/scene-remaining.js"></script>
-<script src="js/start.js"></script>
+<script src="js/core.js?v=20261106b"></script>
+<script src="js/backgrounds.js?v=20261106b"></script>
+<script src="js/app.js?v=20261106b"></script>
+<script src="js/greetings.js?v=20261106b"></script>
+<script src="js/pages.js?v=20261106b"></script>
+<script src="js/alerts.js?v=20261106b"></script>
+<script src="js/news.js?v=20261106b"></script>
+<script src="js/prices.js?v=20261106b"></script>
+<script src="js/extras.js?v=20261106b"></script>
+<script src="js/scene-core.js?v=20261106b"></script>
+<script src="js/scene-orrery.js?v=20261106b"></script>
+<script src="js/scene-grimoire.js?v=20261106b"></script>
+<script src="js/scene-spirit.js?v=20261106b"></script>
+<script src="js/scene-remaining.js?v=20261106b"></script>
+<script src="js/start.js?v=20261106b"></script>
 </body>
 </html>

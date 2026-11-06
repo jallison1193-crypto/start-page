@@ -954,7 +954,8 @@ function toast(message, action) {
 
 // ---------- Settings sheet ----------
 function openSettings(sectionId) {
-  syncSettingsForm();
+  // A form that fails to fill in (say, from a setting this version doesn't know) must never stop the sheet opening
+  try { syncSettingsForm(); } catch (err) { console.error(err); }
   if (!$('settings').open) $('settings').showModal();
   if (sectionId) $(sectionId).scrollIntoView({ block: 'start' });
 }
@@ -1016,7 +1017,7 @@ function syncSettingsForm() {
 
 const onRadio = (name, fn) => document.querySelectorAll(`input[name="${name}"]`).forEach((r) => r.addEventListener('change', () => { if (r.checked) fn(r.value); }));
 // Each theme set brings its own accent; you can still pick a different one afterwards
-onRadio('set', (v) => { settings.set = v; settings.accent = SETS[v].accent; saveSettings(); syncSettingsForm(); applyTheme(true); renderBoard(); });
+onRadio('set', (v) => { if (!SETS[v]) return; settings.set = v; settings.accent = SETS[v].accent; saveSettings(); syncSettingsForm(); applyTheme(true); renderBoard(); });
 onRadio('theme', (v) => { settings.theme = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
 onRadio('schedule', (v) => { settings.schedule = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
 onRadio('accent', (v) => { settings.accent = v; saveSettings(); applyTheme(false); });

@@ -229,9 +229,10 @@ const fx = (() => {
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const born = performance.now() - 90000;          // start partway into the slow morph
   const SOURCES = { fractal: FX_FRACTAL, tiedye: FX_TIEDYE };
-  // Render below full resolution: the glass panes blur it anyway, and it keeps the laptop cool
-  const SCALE = { fractal: 0.36, tiedye: 0.7 };
-  const MOST = { fractal: 0.54, tiedye: 0.85 };
+  // Render well below full resolution: both are soft gradients, the glass panes blur them anyway, and
+  // every pixel here is shaded again each frame. Tie-dye at 0.7 cost a whole CPU core in software GL.
+  const SCALE = { fractal: 0.32, tiedye: 0.4 };
+  const MOST = { fractal: 0.48, tiedye: 0.5 };
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   let gl = null, buf = null, progs = {}, kind = '', u = null, raf = 0, running = false, last = 0, pal = null;
   let movedAt = -1e9;
@@ -269,8 +270,10 @@ const fx = (() => {
   }
   function size() {
     const k = Math.min(Math.min(window.devicePixelRatio || 1, 2) * SCALE[kind], MOST[kind]);
-    canvas.width = Math.round(innerWidth * k); canvas.height = Math.round(innerHeight * k);
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    const cw = Math.round(innerWidth * k), ch = Math.round(innerHeight * k);
+    // Setting a canvas's size wipes and reallocates it, even to the same size, and the theme is re-applied every minute
+    if (canvas.width !== cw || canvas.height !== ch) { canvas.width = cw; canvas.height = ch; }
+    gl.viewport(0, 0, cw, ch);
   }
   function draw(now) {
     mouse.x += (mouse.tx - mouse.x) * 0.1;    // ease towards the pointer so it drifts, never jumps
