@@ -355,6 +355,7 @@ function setSize(id, size) {
     el.classList.add(`w-${size}`);
     el.querySelectorAll('.sizes button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.size === size)));
     WIDGETS[item.type].render(body, size, item);
+    scene.decorate(item, body);
   });
   savePages(); renderWidgetList();
 }

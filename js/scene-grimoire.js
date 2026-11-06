@@ -199,8 +199,10 @@ scene.define('grimoire', (S) => {
   candle.className = 'gm-candle';
   S.over.append(candle);
   let W = 0, H = 0, paper = '', cx = 0, cy = 0, tcx = 0, tcy = 0;
-  let turning = null, drag = null, wheelTotal = 0, wheelTimer = 0;
+  let turning = null, drag = null, wheelTotal = 0, wheelTimer = 0, wheelRest = false, restTimer = 0;
+  let ghostX = -1e4, ghostY = -1e4, ghostWords = [];
   const wrap = $('pages');
+  const leaves = () => [...wrap.children].filter((n) => n.classList.contains('page'));
 
   function geometry() {
     const bw = Math.min(W - 12, 1420);
@@ -221,7 +223,7 @@ scene.define('grimoire', (S) => {
   function dress() {
     if (!settings.swipe) return;
     const name = settings.name.trim() || 'someone';
-    [...wrap.children].forEach((page, i) => {
+    leaves().forEach((page, i) => {
       if (page.querySelector(':scope > .gm-art')) return;
       const inner = page.querySelector('.page-inner');
       if (!inner) return;
@@ -236,22 +238,35 @@ scene.define('grimoire', (S) => {
       const a = Math.floor(rnd() * scenes.length), b = (a + 1 + Math.floor(rnd() * (scenes.length - 1))) % scenes.length;
       const lines = [...GHOST_LINES].sort(() => rnd() - 0.5).slice(0, 4).map((l) => l.replace(/\{name\}/g, name));
       const halfL = W / 2 - 90;
+      const book = geometry();
+      const marginL = Math.max(book.l + 34, left - 118), marginR = Math.max(W - book.r + 34, right - 118);
       art.innerHTML =
         asImg(ivyBorder(h, i * 2 + 1, -1), 'gm-ivy', `left:${Math.max(0, left - 80)}px`) +
         asImg(ivyBorder(h, i * 2 + 2, 1), 'gm-ivy', `right:${Math.max(0, right - 80)}px`) +
         asImg(scenes[a](), 'gm-marg', `left:${Math.max(left, W * 0.25 - 110)}px`) +
         asImg(scenes[b](), 'gm-marg', `left:${W * 0.75 - 110}px;transform:scaleX(-1)`) +
         `<div class="gm-ghost">
-          <p style="left:${left - 48}px;top:44%;transform:rotate(-90deg);transform-origin:0 50%">${esc(lines[0])}</p>
-          <p style="right:${right - 48}px;top:30%;transform:rotate(90deg);transform-origin:100% 50%">${esc(lines[1])}</p>
-          <p style="left:${Math.max(left + 30, halfL - 340)}px;bottom:62px;transform:rotate(-1.2deg)">${esc(lines[2])}</p>
-          <p style="left:${W / 2 + 54}px;bottom:62px;transform:rotate(.8deg)">${esc(lines[3])}</p>
+          <p style="left:${marginL}px;top:44%;transform:rotate(-90deg);transform-origin:0 50%">${words(lines[0])}</p>
+          <p style="right:${marginR}px;top:30%;transform:rotate(90deg);transform-origin:100% 50%">${words(lines[1])}</p>
+          <p style="left:${Math.max(left + 30, halfL - 340)}px;bottom:62px;transform:rotate(-1.2deg)">${words(lines[2])}</p>
+          <p style="left:${W / 2 + 54}px;bottom:62px;transform:rotate(.8deg)">${words(lines[3])}</p>
         </div>`;
       page.prepend(art);
     });
   }
+  const words = (line) => esc(line).split(' ').map((w) => `<span>${w}</span>`).join(' ');
+  // Note where the hidden words sit on this page, so the candle only has to measure distances
+  function findGhost() {
+    const ghost = leaves()[currentPage]?.querySelector('.gm-ghost');
+    ghostWords = ghost ? [...ghost.querySelectorAll('span')].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { el, x: r.left + r.width / 2, y: r.top + r.height / 2, seen: 0 };
+    }) : [];
+    ghostX = -1e4;
+  }
   function showPage(i) {
-    [...wrap.children].forEach((p, n) => p.classList.toggle('gm-on', n === i));
+    leaves().forEach((p, n) => p.classList.toggle('gm-on', n === i));
+    findGhost();
   }
   function setPage(i) {
     currentPage = i;
@@ -329,12 +344,12 @@ scene.define('grimoire', (S) => {
     r.shadeR.style.opacity = (p < 0.92 ? (1 - p) * 0.2 + lift * 0.7 : 0).toFixed(3);
   }
   function startTurn(from, to) {
-    const pagesEls = wrap.children;
+    const pagesEls = leaves();
     const forward = to > from;
     const a = forward ? pagesEls[from] : pagesEls[to];
     const b = forward ? pagesEls[to] : pagesEls[from];
     if (!a || !b) return null;
-    [...pagesEls].forEach((p) => p.classList.remove('gm-on'));
+    pagesEls.forEach((p) => p.classList.remove('gm-on'));
     const r = buildRig(a, b);
     return { r, forward, from, to, p: forward ? 0 : 1 };
   }
@@ -367,6 +382,12 @@ scene.define('grimoire', (S) => {
   }
   function onWheel(e) {
     if (!settings.swipe || arranging || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+    // A trackpad keeps sending movement after your fingers stop. Wait for that to die down.
+    if (wheelRest) {
+      clearTimeout(restTimer);
+      restTimer = setTimeout(() => { wheelRest = false; }, 180);
+      return;
+    }
     if (!drag && !turning && Math.abs(e.deltaX) > 3) {
       const tr = beginInteractive(e.deltaX > 0 ? 1 : -1);
       if (tr) { drag = { tr, wheel: true }; wheelTotal = 0; }
@@ -381,8 +402,9 @@ scene.define('grimoire', (S) => {
   }
   function releaseDrag() {
     if (!drag) return;
-    const { tr } = drag;
+    const { tr, wheel } = drag;
     drag = null;
+    if (wheel) { wheelRest = true; clearTimeout(restTimer); restTimer = setTimeout(() => { wheelRest = false; }, 180); }
     const amt = tr.forward ? tr.p : 1 - tr.p;
     const commit = amt > 0.3;
     animateTurn(tr, tr.forward ? (commit ? 1 : 0) : (commit ? 0 : 1), 420);
@@ -391,13 +413,18 @@ scene.define('grimoire', (S) => {
     if (!settings.swipe || arranging || e.button || turning) return;
     if (e.target.closest('.widget, button, a, input, select, textarea, dialog, .topbar')) return;
     if (!e.target.closest('.pages')) return;
-    const fromRight = e.clientX > W / 2;
-    const tr = beginInteractive(fromRight ? 1 : -1);
-    if (!tr) return;
-    drag = { tr, startX: e.clientX, fromRight };
+    const startX = e.clientX, startY = e.clientY;
+    let tr = null;
     const move = (ev) => {
-      if (!drag) return;
-      const amt = Math.max(0, Math.min(1, (drag.fromRight ? drag.startX - ev.clientX : ev.clientX - drag.startX) / (W * 0.72)));
+      const dx = ev.clientX - startX;
+      if (!tr) {
+        if (Math.abs(dx) < 14 || Math.abs(dx) < Math.abs(ev.clientY - startY)) return;
+        tr = beginInteractive(dx < 0 ? 1 : -1);
+        if (!tr) { up(); return; }
+        drag = { tr };
+        getSelection()?.removeAllRanges();
+      }
+      const amt = Math.max(0, Math.min(1, Math.abs(dx) / (W * 0.72)));
       tr.p = tr.forward ? amt : 1 - amt;
       pose(tr.r, tr.p);
     };
@@ -410,8 +437,9 @@ scene.define('grimoire', (S) => {
   paint();
   tcx = cx = W * 0.56; tcy = cy = H * 0.34;
   return {
-    fps: 24,
-    resize() { paint(); [...wrap.querySelectorAll('.gm-art')].forEach((a) => a.remove()); dress(); },
+    // Follows the cursor smoothly; with no cursor moving, the flame only needs a slow flicker
+    get fps() { return performance.now() - S.pointer.at < 1500 ? 24 : 8; },
+    resize() { paint(); [...wrap.querySelectorAll('.gm-art')].forEach((a) => a.remove()); dress(); findGhost(); },
     moved() { dress(); },
     frame(t, dt) {
       const P = S.pointer;
@@ -422,11 +450,16 @@ scene.define('grimoire', (S) => {
       // A flame never holds still: two slow wanders and a quick shiver
       const n = Math.sin(t / 137) * 0.5 + Math.sin(t / 89 + 1.3) * 0.3 + Math.sin(t / 41 + 0.7) * 0.2;
       const r = 430 + n * 20, fx = cx + Math.sin(t / 211) * 4, fy = cy - 12 + Math.sin(t / 173) * 3;
-      candle.style.setProperty('--cx', `${fx.toFixed(1)}px`);
-      candle.style.setProperty('--cy', `${fy.toFixed(1)}px`);
-      candle.style.setProperty('--r', `${r.toFixed(1)}px`);
-      const ghost = wrap.children[currentPage]?.querySelector('.gm-ghost');
-      if (ghost) { ghost.style.setProperty('--cx', `${fx.toFixed(1)}px`); ghost.style.setProperty('--cy', `${(fy - wrap.getBoundingClientRect().top).toFixed(1)}px`); }
+      // Moving and scaling a finished light costs next to nothing; repainting it would not
+      candle.style.transform = `translate3d(${(fx - 400).toFixed(1)}px, ${(fy - 400).toFixed(1)}px, 0) scale(${(r / 43).toFixed(3)})`;
+      // Hidden words surface near the flame. Nothing is touched unless a word actually changes.
+      if (Math.hypot(cx - ghostX, cy - ghostY) > 5) {
+        ghostX = cx; ghostY = cy;
+        for (const w of ghostWords) {
+          const seen = Math.max(0, Math.min(1, 1.5 - Math.hypot(cx - w.x, cy - w.y) / 170));
+          if (Math.abs(seen - w.seen) > 0.03) { w.seen = seen; w.el.style.opacity = seen.toFixed(2); }
+        }
+      }
     },
     decorate(item, body) {
       if (item.type === 'clock') body.querySelector('.greet')?.classList.add('gm-write');
@@ -446,7 +479,7 @@ scene.define('grimoire', (S) => {
       removeEventListener('wheel', onWheel);
       removeEventListener('pointerdown', onDown);
       wrap.querySelectorAll('.gm-rig, .gm-art').forEach((n) => n.remove());
-      [...wrap.children].forEach((p) => p.classList.remove('gm-on'));
+      leaves().forEach((p) => p.classList.remove('gm-on'));
       if (paper) URL.revokeObjectURL(paper);
     }
   };

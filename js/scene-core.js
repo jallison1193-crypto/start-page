@@ -25,6 +25,7 @@ const scene = (() => {
   function widgetRects() {
     const out = [];
     for (const el of document.querySelectorAll('.pages .widget')) {
+      if (el.closest('.gm-rig')) continue;      // copies on a page in mid-turn don't count
       const r = el.getBoundingClientRect();
       if (r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight) out.push({ left: r.left, top: r.top, right: r.right, bottom: r.bottom, el });
     }
@@ -85,8 +86,9 @@ const scene = (() => {
     },
     // After a widget renders, a scene can add to it or rename it
     decorate(item, body) {
+      // {h} keeps what the heading already says, like the month or your town
       const voice = WIDGET_VOICE[settings.set]?.[item.type];
-      if (voice) { const h = body.querySelector('.w-head h2'); if (h && !item.cfg.title) h.textContent = voice; }
+      if (voice) { const h = body.querySelector('.w-head h2'); if (h && !item.cfg.title) h.textContent = voice.replace('{h}', h.textContent); }
       api?.decorate?.(item, body);
     },
     // A scene can take over the move between pages. Returns true if it did.
@@ -99,10 +101,10 @@ const scene = (() => {
 
 // Each theme calls the widgets something of its own. Only the wording changes.
 const WIDGET_VOICE = {
-  watcher: { weather: 'Conditions outside', sky: 'What’s above you', alerts: 'Disruptions on your lines', notes: 'Your admissions', news: 'What they’re saying', tasks: 'Still undone', remaining: 'Time left under observation', obits: 'No longer observed', reading: 'What you’re reading. We saw.' },
-  grimoire: { weather: 'Of the Weather', sky: 'Of the Heavens', alerts: 'Of the Rails', notes: 'A Note in the Margin', tasks: 'Labours Unfinished', calendar: 'The Reckoning of Days', projects: 'Works in Progress', reading: 'The Book at Hand', prices: 'Of Coin & Merchants', obits: 'The Lately Dead', air: 'Of the Foul Air', quakes: 'The Earth Doth Tremble', launches: 'Fire into the Firmament', iss: 'The Wandering Star', remaining: 'Weeks Yet Allotted', prompts: 'A Question', decide: 'Consult the Book', focus: 'The Hourglass', countdown: 'The Day Approaches', course: 'Thy Studies' },
-  spirit: { weather: 'The air tonight', sky: 'Signs above', alerts: 'Disturbances on your lines', notes: 'Messages received', tasks: 'Unfinished business', calendar: 'The hours', remaining: 'Weeks before you join us', obits: 'New arrivals', prompts: 'The spirits ask', decide: 'Ask the board', reading: 'Your current book', projects: 'What you leave behind' },
-  remaining: { weather: 'Today’s weather, of few', sky: 'The sky, still there', alerts: 'Delays you’ll never get back', notes: 'Worth writing down?', tasks: 'Before it’s too late', calendar: 'This month, spent', news: 'Other people’s weeks', projects: 'What you did with it', reading: 'Books you’ll finish', prices: 'Things you can’t take with you', focus: '25 minutes, gone' }
+  watcher: { weather: 'Conditions in {h}', sky: 'What’s above you', alerts: 'Disruptions on your lines', notes: 'Your admissions', tasks: 'Still undone', remaining: 'Time left under observation', obits: 'No longer observed', reading: 'What you’re reading. We saw.' },
+  grimoire: { weather: 'The Weather in {h}', sky: 'Of the Heavens', alerts: 'Of the Rails', notes: 'A Note in the Margin', tasks: 'Labours Unfinished', calendar: 'The Reckoning of {h}', projects: 'Works in Progress', reading: 'The Book at Hand', prices: 'Of Coin & Merchants', obits: 'The Lately Dead', quakes: 'The Earth Doth Tremble', launches: 'Fire into the Firmament', iss: 'The Wandering Star', remaining: 'Weeks Yet Allotted', prompts: 'A Question', decide: 'Consult the Book', focus: 'The Hourglass', course: 'Thy Studies' },
+  spirit: { weather: 'The air in {h}', sky: 'Signs above', alerts: 'Disturbances on your lines', notes: 'Messages received', tasks: 'Unfinished business', remaining: 'Weeks before you join us', obits: 'New arrivals', prompts: 'The spirits ask', decide: 'Ask the board', reading: 'Your current book', projects: 'What you leave behind' },
+  remaining: { weather: '{h}, while it lasts', sky: 'The sky, still there', alerts: 'Delays you’ll never get back', notes: 'Worth writing down?', tasks: 'Before it’s too late', calendar: '{h}, being spent', projects: 'What you did with it', reading: 'Books you’ll finish', prices: 'Things you can’t take with you', focus: '25 minutes, gone' }
 };
 
 // Draw a fragment shader once onto a canvas, for art that doesn't move

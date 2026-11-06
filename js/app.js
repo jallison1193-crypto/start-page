@@ -16,6 +16,13 @@ const SETS = {
   spirit:   { name: 'The Spirit Board', accent: 'amber', bg: 'scene' },
   remaining: { name: 'Remaining', accent: 'silver', bg: 'scene' }
 };
+// What each art theme needs from you, shown under the theme picker
+const SET_HINTS = {
+  watcher: 'Click anywhere and they flinch. Stop moving and they stare.',
+  grimoire: 'Your cursor is a candle, so look in the margins. Drag a blank part of the page to turn it.',
+  spirit: 'Make the Clock Large and it becomes the board. Click the greeting for another.',
+  remaining: 'Hover a square to see which week it is. The more widgets on a page, the smaller your weeks get.'
+};
 const rgbList = (s) => s.split(',').map((v) => Number(v) / 255);
 function applyTheme(animate) {
   const root = document.documentElement;
@@ -985,9 +992,13 @@ function syncSettingsForm() {
   setRadio('units', settings.units);
   const only = SET_ONLY[settings.set];
   $('modeHint').hidden = !only;
+  $('setHint').hidden = !SET_HINTS[settings.set];
+  $('setHint').textContent = SET_HINTS[settings.set] || '';
+  // The art themes set their own colors and mode, so those controls would do nothing
+  $('accentField').hidden = $('modeField').hidden = SETS[settings.set].bg === 'scene';
   $('modeHint').textContent = only ? `${SETS[settings.set].name} is ${only} only, so it stays ${only} whatever you pick here.` : '';
   if (document.activeElement !== $('ghUser')) $('ghUser').value = settings.github;
-  $('schedBox').hidden = settings.theme !== 'schedule';
+  $('schedBox').hidden = settings.theme !== 'schedule' || SETS[settings.set].bg === 'scene';
   $('schedTimes').hidden = settings.schedule !== 'times';
   $('lightAt').value = settings.lightAt;
   $('darkAt').value = settings.darkAt;

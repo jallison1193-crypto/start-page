@@ -23,20 +23,21 @@ scene.define('remaining', (S) => {
   S.back.append(canvas);
   const ctx = canvas.getContext('2d', { alpha: false });
   const tip = document.createElement('div');
-  tip.className = 'rm-tip'; tip.hidden = true;
+  tip.className = 'rm-tip'; tip.hidden = true; tip.setAttribute('aria-hidden', 'true');
   const ask = document.createElement('button');
   ask.className = 'rm-ask'; ask.type = 'button'; ask.textContent = 'Add your birth date to fill in your weeks';
   ask.addEventListener('click', () => editLife());
   S.over.append(tip, ask);
 
   let W = 0, H = 0, dpr = 1, cells = [], pitch = 8, cols = 0, grid = null, base = null, weeks = lifeWeeks();
-  let reveal = 0, waves = [], lastBeat = 0, beatCount = 0, fade = 1, hover = -1, startAt = performance.now();
+  let baked = false, reveal = 0, waves = [], lastBeat = 0, beatCount = 0, fade = 1, hover = -1, startAt = performance.now();
   const BEAT = 1060;                              // about 57 beats a minute: calm, for now
+  const RIPPLE_LIFE = 2000;
   const SPENT = [216, 210, 194], ROSE = [232, 58, 84];
 
   function size() {
     W = innerWidth; H = innerHeight;
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
   }
   const countFree = (p, rects) => {
@@ -81,7 +82,7 @@ scene.define('remaining', (S) => {
       }
     }
     paintBase();
-    fade = 0;
+    fade = cells.length && reveal >= 1 ? 0.55 : 0;
     ask.hidden = weeks.known;
     S.widgetRects().forEach((r) => { if (r.el.dataset.type === 'clock') stampLeft(r.el); });
   }
@@ -97,6 +98,15 @@ scene.define('remaining', (S) => {
     const hollow = s >= 5;
     b.strokeStyle = 'rgba(216,210,194,.42)'; b.lineWidth = 0.75;
     b.fillStyle = 'rgba(216,210,194,.24)';
+    // Once your life has filled in on arrival, spent weeks are just part of this picture
+    if (reveal >= 1) {
+      for (let i = 0; i < Math.min(weeks.lived, cells.length); i++) {
+        b.fillStyle = `rgba(216,210,194,${(lifeColor(i) * 0.9).toFixed(3)})`;
+        b.fillRect(cells[i].x, cells[i].y, s, s);
+      }
+      b.fillStyle = 'rgba(216,210,194,.24)';
+    }
+    baked = reveal >= 1;
     for (let i = weeks.lived; i < cells.length; i++) {
       const c = cells[i];
       if (hollow) b.strokeRect(c.x + 0.35, c.y + 0.35, s - 0.7, s - 0.7); else b.fillRect(c.x, c.y, s, s);
@@ -145,9 +155,10 @@ scene.define('remaining', (S) => {
     if (beatOn && t - lastBeat > BEAT) {
       lastBeat = t; beatCount++;
       const c = cells[Math.min(weeks.lived, cells.length - 1)];
-      if (c) waves.push({ x: c.x + s / 2, y: c.y + s / 2, t });
+      // The heart always beats. The ripple only spreads while you're around to see it.
+      if (c && t - P.at < 60000) waves.push({ x: c.x + s / 2, y: c.y + s / 2, t });
     }
-    waves = waves.filter((w) => t - w.t < 2600);
+    waves = waves.filter((w) => t - w.t < RIPPLE_LIFE);
     // How far each ripple has reached, sampled per square
     const speed = 0.34;
     const lift = (c) => {
@@ -156,23 +167,25 @@ scene.define('remaining', (S) => {
         const age = t - w.t, reach = age * speed;
         const d = Math.hypot(c.x - w.x, c.y - w.y);
         const off = (d - reach) / 74;
-        if (off > -1.6 && off < 1.6) v += Math.exp(-off * off * 2.6) * Math.exp(-d / 620) * Math.max(0, 1 - age / 2600);
+        if (off > -1.6 && off < 1.6) v += Math.exp(-off * off * 2.6) * Math.exp(-d / 620) * Math.max(0, 1 - age / RIPPLE_LIFE);
       }
       return v;
     };
-    const hasWaves = waves.length > 0;
-    for (let i = 0; i < shown; i++) {
-      const c = cells[i];
-      const a = lifeColor(i);
-      ctx.fillStyle = `rgba(216,210,194,${hasWaves ? Math.min(1, a * 0.9 + lift(c) * 0.5).toFixed(3) : (a * 0.9).toFixed(3)})`;
-      ctx.fillRect(c.x, c.y, s, s);
+    if (reveal >= 1 && !baked) paintBase();
+    if (!baked) {
+      for (let i = 0; i < shown; i++) {
+        ctx.fillStyle = `rgba(216,210,194,${(lifeColor(i) * 0.9).toFixed(3)})`;
+        ctx.fillRect(cells[i].x, cells[i].y, s, s);
+      }
     }
-    if (hasWaves) {
-      for (let i = weeks.lived; i < cells.length; i++) {
+    // Only the squares the ripple is passing through get touched
+    if (waves.length) {
+      const count = Math.min(weeks.lived, cells.length);
+      for (let i = 0; i < cells.length; i++) {
         const c = cells[i];
         const v = lift(c);
-        if (v < 0.02) continue;
-        ctx.fillStyle = `rgba(232,58,84,${Math.min(0.62, v * 0.62).toFixed(3)})`;
+        if (v < 0.03) continue;
+        ctx.fillStyle = i < count ? `rgba(255,250,235,${Math.min(0.8, v * 0.6).toFixed(2)})` : `rgba(232,58,84,${Math.min(0.62, v * 0.62).toFixed(2)})`;
         ctx.fillRect(c.x, c.y, s, s);
       }
     }
@@ -223,12 +236,13 @@ scene.define('remaining', (S) => {
 
   size();
   return {
-    fps: 30,
+    // A two-beat pulse reads fine at 20 frames a second; idle, it needs even fewer
+    get fps() { return reveal < 1 || performance.now() - S.pointer.at < 60000 ? 20 : 10; },
     resize() { size(); flow(S.widgetRects()); },
     moved(rects) { if (!cells.length) flow(rects); },
     layout(rects) { flow(rects); if (!S.running()) frame(performance.now(), 0, true); },
     frame,
     decorate(item, body) { if (item.type === 'clock') stampLeft(body); },
-    lifeChanged() { reveal = 0; startAt = performance.now(); waves = []; flow(S.widgetRects()); }
+    lifeChanged() { reveal = 0; baked = false; startAt = performance.now(); waves = []; flow(S.widgetRects()); }
   };
 });

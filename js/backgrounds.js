@@ -76,7 +76,7 @@ const sky = (() => {
   function loop(t) {
     if (!running) return;
     const dt = Math.min((t - last) / 1000, 0.1);
-    if (t - last > 33) {                    // about 30 frames a second
+    if (t - last > 50) {                    // 20 frames a second: dust is slow, so this looks the same as more
       for (const d of dust) {
         d.y += d.dir * d.speed * dt;
         if (d.y < -10) { d.y = h + 10; d.x = Math.random() * w; }
@@ -122,7 +122,7 @@ vec2 kaleido(vec2 p, float n) {
 }
 vec4 julia(vec2 z, vec2 c) {
   float ring = 1e3, crs = 1e3, core = 1e3, n = 0.0;
-  for (int i = 0; i < 72; i++) {
+  for (int i = 0; i < 46; i++) {
     z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
     ring = min(ring, abs(length(z) - 0.62));
     crs = min(crs, min(abs(z.x), abs(z.y)));
@@ -130,7 +130,7 @@ vec4 julia(vec2 z, vec2 c) {
     if (dot(z, z) > 64.0) break;
     n += 1.0;
   }
-  float s = n >= 72.0 ? 0.0 : clamp((n - log2(log2(dot(z, z)))) / 72.0, 0.0, 1.0);
+  float s = n >= 46.0 ? 0.0 : clamp((n - log2(log2(dot(z, z)))) / 46.0, 0.0, 1.0);
   return vec4(exp(-ring * 16.0), exp(-crs * 22.0), exp(-sqrt(core) * 7.0), s);
 }
 void main() {
@@ -230,10 +230,12 @@ const fx = (() => {
   const born = performance.now() - 90000;          // start partway into the slow morph
   const SOURCES = { fractal: FX_FRACTAL, tiedye: FX_TIEDYE };
   // Render below full resolution: the glass panes blur it anyway, and it keeps the laptop cool
-  const SCALE = { fractal: 0.42, tiedye: 0.7 };
+  const SCALE = { fractal: 0.36, tiedye: 0.7 };
+  const MOST = { fractal: 0.54, tiedye: 0.85 };
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
   let gl = null, buf = null, progs = {}, kind = '', u = null, raf = 0, running = false, last = 0, pal = null;
-  addEventListener('pointermove', (e) => { mouse.tx = (e.clientX / innerWidth) * 2 - 1; mouse.ty = 1 - (e.clientY / innerHeight) * 2; });
+  let movedAt = -1e9;
+  addEventListener('pointermove', (e) => { mouse.tx = (e.clientX / innerWidth) * 2 - 1; mouse.ty = 1 - (e.clientY / innerHeight) * 2; movedAt = performance.now(); });
 
   function init() {
     gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'low-power' });
@@ -266,13 +268,13 @@ const fx = (() => {
     return true;
   }
   function size() {
-    const k = Math.min(window.devicePixelRatio || 1, 2) * SCALE[kind];
+    const k = Math.min(Math.min(window.devicePixelRatio || 1, 2) * SCALE[kind], MOST[kind]);
     canvas.width = Math.round(innerWidth * k); canvas.height = Math.round(innerHeight * k);
     gl.viewport(0, 0, canvas.width, canvas.height);
   }
   function draw(now) {
-    mouse.x += (mouse.tx - mouse.x) * 0.04;   // ease towards the pointer so it drifts, never jumps
-    mouse.y += (mouse.ty - mouse.y) * 0.04;
+    mouse.x += (mouse.tx - mouse.x) * 0.1;    // ease towards the pointer so it drifts, never jumps
+    mouse.y += (mouse.ty - mouse.y) * 0.1;
     gl.uniform2f(u.res, canvas.width, canvas.height);
     gl.uniform1f(u.t, (now - born) / 1000);
     gl.uniform3fv(u.a, pal.a); gl.uniform3fv(u.b, pal.b); gl.uniform3fv(u.bg, pal.bg);
@@ -282,7 +284,8 @@ const fx = (() => {
   }
   function loop(now) {
     if (!running) return;
-    if (now - last > 40) { draw(now); last = now; }
+    // The colors morph over minutes, so a few frames a second is plenty until the pointer moves
+    if (now - last > (now - movedAt < 1500 ? 66 : 140)) { draw(now); last = now; }
     raf = requestAnimationFrame(loop);
   }
   addEventListener('resize', () => { if (gl && u && !canvas.hidden) { size(); draw(performance.now()); } });

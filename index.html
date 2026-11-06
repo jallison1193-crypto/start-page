@@ -85,7 +85,7 @@ try {
   <button class="btn primary sm" id="doneArranging" type="button">Done</button>
 </div>
 
-<div id="sceneOver" class="scene-over" aria-hidden="true" hidden></div>
+<div id="sceneOver" class="scene-over" hidden></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -123,8 +123,9 @@ try {
           <label><input type="radio" name="set" value="spirit"><i class="pv-spirit"></i><span>Spirit Board</span></label>
           <label><input type="radio" name="set" value="remaining"><i class="pv-remaining"></i><span>Remaining</span></label>
         </div>
+        <p class="hint" id="setHint" style="margin:10px 0 0" hidden></p>
       </div>
-      <div class="fieldset">
+      <div class="fieldset" id="modeField">
         <span class="label">Mode</span>
         <p class="hint" id="modeHint" style="margin:0 0 8px" hidden></p>
         <div class="seg" role="radiogroup" aria-label="Theme">
@@ -145,7 +146,7 @@ try {
         </div>
         <p class="hint" id="schedHint"></p>
       </div>
-      <div class="fieldset">
+      <div class="fieldset" id="accentField">
         <span class="label">Accent</span>
         <div class="swatches" role="radiogroup" aria-label="Accent color">
           <label><input type="radio" name="accent" value="teal"><i class="sw-teal"></i>Teal</label>
@@ -158,7 +159,7 @@ try {
           <label><input type="radio" name="accent" value="ember"><i class="sw-ember"></i>Ember</label>
         </div>
       </div>
-      <label class="row"><span><strong>Moving background</strong><small>Dust, ash or the fractal drifting slowly</small></span><input type="checkbox" class="switch" id="dust"></label>
+      <label class="row"><span><strong>Moving background</strong><small>Turn off to hold the background or art theme still</small></span><input type="checkbox" class="switch" id="dust"></label>
     </section>
 
     <section id="set-pages">

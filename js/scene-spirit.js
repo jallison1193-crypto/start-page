@@ -76,7 +76,7 @@ function moonFace(x, y, r) {
     <g fill="#E5BF68"><path d="M26 -14l1.6 4.4 4.4 1.6-4.4 1.6-1.6 4.4-1.6-4.4-4.4-1.6 4.4-1.6zM18 16l1 2.8 2.8 1-2.8 1-1 2.8-1-2.8-2.8-1 2.8-1z"/></g></g>`;
 }
 function planchetteSvg() {
-  return `<svg viewBox="0 0 170 214" width="150" height="189" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  return `<svg viewBox="0 0 170 214" width="120" height="151" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
       <linearGradient id="plWood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5A2A12"/><stop offset=".45" stop-color="#2E1208"/><stop offset=".7" stop-color="#47200D"/><stop offset="1" stop-color="#1C0A04"/></linearGradient>
       <linearGradient id="plBevel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBE3A3"/><stop offset=".3" stop-color="#B98A35"/><stop offset=".55" stop-color="#F0D083"/><stop offset=".8" stop-color="#7A5520"/><stop offset="1" stop-color="#CFA650"/></linearGradient>
@@ -116,8 +116,8 @@ scene.define('spirit', (S) => {
   S.over.append(dark, pl);
   let W = 0, H = 0, board = null, boardEl = null, spelled = null;
   const body = { x: 0, y: 0, vx: 0, vy: 0, rot: 0, tx: 0, ty: 0, alpha: 0 };
-  const glass = { x: 75, y: 56.5 };   // the middle of the window, within the planchette
-  let script = [], step = 0, holdUntil = 0, stepStart = 0, target = '', shown = '', haunting = false, nextHaunt = performance.now() + 75000 + Math.random() * 60000, litNow = null, restAt = 0;
+  const glass = { x: 60, y: 45.2 };   // the middle of the window, within the planchette
+  let script = [], step = 0, holdUntil = 0, stepStart = 0, target = '', shown = '', haunting = false, nextHaunt = performance.now() + 75000 + Math.random() * 60000, litNow = null, lastSpelled = '', lastCarve = 0, lastFlicker = 0, lastPose = '';
 
   function paint() {
     W = innerWidth; H = innerHeight;
@@ -132,8 +132,15 @@ scene.define('spirit', (S) => {
       return r.left < W && r.right > 0 && r.width >= 430 && r.height >= 300;
     });
     const el = clocks[0] || null;
-    for (const w of document.querySelectorAll('.pages .widget[data-type="clock"]')) {
-      if (w !== el && w.classList.contains('sp-board-on') && w.getBoundingClientRect().width < 430) { w.classList.remove('sp-board-on'); w.querySelector('.sp-art')?.remove(); }
+    // A clock made smaller goes back to being an ordinary plaque
+    for (const w of document.querySelectorAll('.pages .widget.sp-board-on')) {
+      const box = w.getBoundingClientRect();
+      if (box.width >= 430 && box.height >= 300) continue;
+      w.classList.remove('sp-board-on');
+      delete w.dataset.carved;
+      w.querySelectorAll('.sp-art, .sp-spelled').forEach((n) => n.remove());
+      const meta = w.querySelector('.clock-meta');
+      if (meta) meta.style.top = '';
     }
     boardEl = el;
     if (!el) { board = null; return; }
@@ -183,6 +190,7 @@ scene.define('spirit', (S) => {
       spelled = document.createElement('p');
       spelled.className = 'sp-spelled';
       spelled.title = 'Click for another';
+      spelled.setAttribute('aria-live', 'off');
       spelled.addEventListener('click', () => nextGreeting());
       el.querySelector('.greet')?.after(spelled);
     } else spelled = el.querySelector('.sp-spelled');
@@ -212,18 +220,23 @@ scene.define('spirit', (S) => {
     if (writes && spelled) { spelled.textContent = ''; shown = ''; }
   }
 
+  const busy = () => script.length > 0 && step < script.length;
   function frame(t, dt, frozen) {
-    if (t % 6 < 3 || !dt) dark.style.opacity = (0.82 + Math.sin(t / 190) * 0.05 + Math.sin(t / 67) * 0.04).toFixed(3);
-    if (!board || !document.contains(board)) carve();
+    // The room's flicker runs slowly, and is the only thing that moves when nothing else does
+    if (t - lastFlicker > 110 || !dt) { lastFlicker = t; dark.style.opacity = (0.82 + Math.sin(t / 190) * 0.05 + Math.sin(t / 67) * 0.04).toFixed(2); }
+    if ((!board || !document.contains(board)) && t - lastCarve > 500) { lastCarve = t; carve(); }
     const rect = boardEl?.getBoundingClientRect();
-    const visible = board && rect && rect.left < W * 0.9 && rect.right > W * 0.1;
+    const visible = board && rect && rect.left < W * 0.9 && rect.right > W * 0.1 && rect.top < H * 0.9 && rect.bottom > H * 0.1;
 
     // Keep the greeting in step with the clock
     const greetEl = boardEl?.querySelector('.greet');
     const line = greetEl?.textContent || '';
     if (visible && spelled && line && line !== target) {
       target = line;
-      if (frozen || S.still) { spelled.textContent = line; script = []; } else spell(line, true);
+      // Only a new line gets spelled: redrawing the clock shouldn't start it all over
+      if (frozen || S.still || line === lastSpelled) { spelled.textContent = line; shown = line; script = []; }
+      else { spell(line, true); lastSpelled = line; }
+      spelled.setAttribute('aria-label', line);
     }
     if (frozen && spelled && target) spelled.textContent = target;
 
@@ -232,7 +245,7 @@ scene.define('spirit', (S) => {
       const cur = script[step];
       if (!cur.stop) {
         if (!haunting) { shown += cur.ch; spelled.textContent = shown; }
-        step++; if (step >= script.length) restAt = t;
+        step++;
       } else {
         const p = letterPos(cur.stop);
         if (!p) { step++; }
@@ -246,7 +259,6 @@ scene.define('spirit', (S) => {
           }
           if (holdUntil && t > holdUntil) {
             holdUntil = 0; step++; stepStart = t;
-            if (step >= script.length) restAt = t;
           }
         }
       }
@@ -256,7 +268,8 @@ scene.define('spirit', (S) => {
         const P = S.pointer;
         const over = P.seen && t - P.at < 4000 && P.x > rect.left && P.x < rect.right && P.y > rect.top && P.y < rect.bottom;
         if (over) { wantX = P.x; wantY = P.y; }
-        else { wantX = rect.left + rect.width * 0.5 + Math.sin(t / 5300) * 8; wantY = rect.top + rect.height * 0.5 + Math.sin(t / 4100) * 6; }
+        // Between messages it rests off to one side, clear of the writing
+        else { wantX = rect.left + rect.width * 0.1; wantY = rect.top + rect.height * 0.72; }
         if (!script.length || step >= script.length) {
           if (t > nextHaunt && !P.seen || t > nextHaunt && t - P.at > 25000) {
             nextHaunt = t + 80000 + Math.random() * 120000;
@@ -268,23 +281,34 @@ scene.define('spirit', (S) => {
     if (!dt) { body.x = wantX - glass.x; body.y = wantY - glass.y; }
     else {
       // A spring with some weight, and fingers that aren't quite steady
-      const speedUp = script.length && step < script.length ? 118 : 26;
+      const speedUp = busy() ? 118 : 26;
       const damp = 2 * Math.sqrt(speedUp) * 0.86;
-      body.vx += ((wantX - glass.x - body.x) * speedUp - body.vx * damp) * dt;
-      body.vy += ((wantY - glass.y - body.y) * speedUp - body.vy * damp) * dt;
-      body.x += body.vx * dt; body.y += body.vy * dt;
+      for (let left = dt; left > 0; left -= 0.016) {
+        const h = Math.min(left, 0.016);
+        body.vx += ((wantX - glass.x - body.x) * speedUp - body.vx * damp) * h;
+        body.vy += ((wantY - glass.y - body.y) * speedUp - body.vy * damp) * h;
+        body.x += body.vx * h; body.y += body.vy * h;
+      }
       body.rot += (Math.max(-13, Math.min(13, body.vx * 0.016)) - body.rot) * Math.min(1, dt * 7);
     }
-    const shake = dt ? (Math.sin(t / 37) + Math.sin(t / 23 + 1.2)) * 0.34 : 0, shakeY = dt ? Math.sin(t / 29 + 2.1) * 0.34 : 0;
+    // Fingers only shake while they're pushing it
+    const shaky = dt && busy();
+    const shake = shaky ? (Math.sin(t / 37) + Math.sin(t / 23 + 1.2)) * 0.34 : 0, shakeY = shaky ? Math.sin(t / 29 + 2.1) * 0.34 : 0;
     body.alpha += ((visible ? 1 : 0) - body.alpha) * (dt ? Math.min(1, dt * 3) : 1);
-    pl.style.opacity = body.alpha.toFixed(3);
-    pl.style.transform = `translate3d(${(body.x + shake).toFixed(2)}px, ${(body.y + shakeY).toFixed(2)}px, 0) rotate(${body.rot.toFixed(2)}deg)`;
+    const pose = `translate3d(${(body.x + shake).toFixed(1)}px, ${(body.y + shakeY).toFixed(1)}px, 0) rotate(${body.rot.toFixed(1)}deg)|${body.alpha.toFixed(2)}`;
+    if (pose !== lastPose) {
+      lastPose = pose;
+      const [move, alpha] = pose.split('|');
+      pl.style.transform = move;
+      pl.style.opacity = alpha;
+    }
   }
 
   paint();
   body.x = W * 0.3; body.y = H + 120;
   return {
-    fps: 60,
+    // Smooth while the planchette is travelling or you're moving; a slow tick otherwise
+    get fps() { return busy() || performance.now() - S.pointer.at < 1500 || Math.hypot(body.vx, body.vy) > 2 ? 60 : 8; },
     resize() { paint(); if (boardEl) { delete boardEl.dataset.carved; } carve(); },
     moved() { carve(); },
     layout() { carve(); },

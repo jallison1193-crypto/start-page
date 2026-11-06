@@ -64,12 +64,13 @@
 .sp-board-on .date, .sp-board-on .wxline { font-size: 0.9375rem; color: #D6C59C; text-shadow: 0 1px 2px #000; margin: 0; }
 .sp-board-on .wxline { display: none; }
 
+[data-set="spirit"] .hours li { font-size: 0.8125rem; }
+[data-set="spirit"] .hours .t { font-size: 0.9375rem; }
+[data-set="spirit"] .hours .r { font-size: 0.75rem; }
+.arranging .sp-planchette { opacity: 0 !important; }
+
 /* Above everything: the room's flicker, and the planchette */
 .sp-dark { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 52%, transparent 34%, rgba(5, 2, 1, 0.58) 100%); }
-.sp-planchette { position: absolute; left: 0; top: 0; width: 150px; height: 189px; transform-origin: 75px 56.5px; will-change: transform; filter: drop-shadow(0 10px 7px rgba(0, 0, 0, 0.72)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6)); }
+.sp-planchette { position: absolute; left: 0; top: 0; width: 120px; height: 151px; transform-origin: 60px 45.2px; will-change: transform; filter: drop-shadow(0 10px 7px rgba(0, 0, 0, 0.72)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6)); }
 .sp-planchette svg { display: block; }
-.pv-spirit { --p:
-  radial-gradient(ellipse 7px 10px at 62% 52%, transparent 0 3px, #D5A94C 3.5px 4px, #3A1A0A 4.5px 100%),
-  radial-gradient(circle at 18% 22%, #E5C271 0 3px, transparent 3.5px),
-  radial-gradient(circle at 82% 22%, #E5C271 0 2.4px, transparent 3px),
-  repeating-linear-gradient(174deg, #4A200D 0 3px, #33150A 3px 7px, #5A2A12 7px 8px); }
+.pv-spirit { --p: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 60'%3E%3Cdefs%3E%3ClinearGradient id='w' x2='1' y2='.25'%3E%3Cstop stop-color='%23572410'/%3E%3Cstop offset='.5' stop-color='%23321307'/%3E%3Cstop offset='1' stop-color='%23612B12'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='80' height='60' fill='url(%23w)'/%3E%3Crect x='3.5' y='3.5' width='73' height='53' fill='none' stroke='%23C79C48' stroke-width='.7'/%3E%3Ccircle cx='13' cy='12' r='4.4' fill='%23E5C271'/%3E%3Cpath d='M67 7.6a4.6 4.6 0 1 0 2.8 8.2 3.8 3.8 0 0 1-2.8-8.2z' fill='%23E5C271'/%3E%3Cg font-family='Georgia,serif' font-size='8' fill='%23E5C271' text-anchor='middle'%3E%3Ctext x='40' y='17'%3EABCDEF%3C/text%3E%3Ctext x='40' y='28'%3ENOPQRS%3C/text%3E%3C/g%3E%3Cpath d='M47 29c6 0 10 4 10 10 0 6-5 10-10 17-5-7-10-11-10-17 0-6 4-10 10-10z' fill='%23321307' stroke='%23E5C271' stroke-width='1.1'/%3E%3Ccircle cx='47' cy='38' r='4.6' fill='%23F6E4B4' fill-opacity='.2' stroke='%23E5C271'/%3E%3C/svg%3E") center / cover no-repeat; }
