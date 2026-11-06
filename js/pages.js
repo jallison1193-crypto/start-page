@@ -158,6 +158,7 @@ function buildWidget(item) {
   el.append(body, buildChrome(item, def));
   mounted[item.id] = { el, body };
   def.render(body, item.size, item);
+  scene.decorate(item, body);
   return el;
 }
 
@@ -197,6 +198,7 @@ function renderBoard() {
   sizeRows();
   renderPageTabs();
   goToPage(currentPage, false);
+  scene.nudgeLayout();
 }
 
 // Every copy of a widget type, or one widget by id
@@ -204,7 +206,7 @@ function refresh(key) {
   for (const item of allItems()) {
     if (item.id !== key && item.type !== key) continue;
     const m = mounted[item.id];
-    if (m && m.el.isConnected) WIDGETS[item.type].render(m.body, item.size, item);
+    if (m && m.el.isConnected) { WIDGETS[item.type].render(m.body, item.size, item); scene.decorate(item, m.body); }
   }
 }
 
@@ -212,8 +214,9 @@ function refresh(key) {
 function sizeRows() {
   const root = document.documentElement;
   if (!settings.swipe) { root.style.removeProperty('--row'); return; }
-  const avail = innerHeight - $('topbar').offsetHeight - 34;
-  const gap = 14;
+  const css = getComputedStyle(root);
+  const avail = innerHeight - $('topbar').offsetHeight - 34 - (parseFloat(css.getPropertyValue('--page-reserve')) || 0);
+  const gap = parseFloat(css.getPropertyValue('--gap')) || 14;
   const row = Math.round((avail - gap * (PAGE_ROWS - 1)) / PAGE_ROWS);
   root.style.setProperty('--row', `${Math.max(132, Math.min(row, 210))}px`);
 }
@@ -221,6 +224,8 @@ addEventListener('resize', () => { sizeRows(); goToPage(currentPage, false); });
 
 // ---------- Moving between pages ----------
 function goToPage(i, smooth = true) {
+  i = Math.max(0, Math.min(i, pages.length - 1));
+  if (scene.turn(currentPage, i, smooth)) return;
   currentPage = Math.max(0, Math.min(i, pages.length - 1));
   store.set('sp.page', currentPage);
   const wrap = $('pages');

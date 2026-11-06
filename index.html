@@ -10,14 +10,18 @@
 <script>
 // Decide light or dark before the page paints, so it never flashes the wrong theme
 // Some theme sets only make sense in one mode
-window.SET_ONLY = { phosphor: 'dark', ashfall: 'dark' };
+window.SET_ONLY = { phosphor: 'dark', ashfall: 'dark', watcher: 'dark', grimoire: 'light', spirit: 'dark', remaining: 'dark' };
 // Each theme set brings its own typefaces, loaded only when that set is in use
 window.SET_FONTS = {
   paper: 'family=Funnel+Display:wght@300..800&family=Funnel+Sans:wght@300..700',
   fractal: 'family=Unbounded:wght@200..500',
   phosphor: 'family=Martian+Mono:wght@200..500',
   ashfall: 'family=Cormorant:ital,wght@0,400;1,300;1,400',
-  tiedye: 'family=Recursive:slnt,wght,CASL@-15..0,300..1000,0..1'
+  tiedye: 'family=Recursive:slnt,wght,CASL@-15..0,300..1000,0..1',
+  watcher: 'family=Six+Caps&family=Familjen+Grotesk:wght@400..700',
+  grimoire: 'family=UnifrakturCook:wght@700&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC',
+  spirit: 'family=Metamorphous&family=Sorts+Mill+Goudy:ital@0;1',
+  remaining: 'family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Schibsted+Grotesk:wght@400..600'
 };
 window.loadSetFonts = function (set) {
   const q = SET_FONTS[set];
@@ -55,10 +59,15 @@ try {
 </script>
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/widgets.css">
+<link rel="stylesheet" href="css/theme-watcher.css">
+<link rel="stylesheet" href="css/theme-grimoire.css">
+<link rel="stylesheet" href="css/theme-spirit.css">
+<link rel="stylesheet" href="css/theme-remaining.css">
 </head>
 <body>
 <canvas id="sky" aria-hidden="true"></canvas>
 <canvas id="fx" aria-hidden="true" hidden></canvas>
+<div id="sceneBack" class="scene-back" aria-hidden="true" hidden></div>
 
 <header class="topbar" id="topbar">
   <nav class="page-tabs" id="pageTabs" aria-label="Pages"></nav>
@@ -75,6 +84,8 @@ try {
   <button class="btn quiet sm" id="addWidgets" type="button">Add widgets</button>
   <button class="btn primary sm" id="doneArranging" type="button">Done</button>
 </div>
+
+<div id="sceneOver" class="scene-over" aria-hidden="true" hidden></div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -107,6 +118,10 @@ try {
           <label><input type="radio" name="set" value="phosphor"><i class="pv-phosphor"></i><span>Phosphor</span></label>
           <label><input type="radio" name="set" value="ashfall"><i class="pv-ashfall"></i><span>Ashfall</span></label>
           <label><input type="radio" name="set" value="tiedye"><i class="pv-tiedye"></i><span>Tie-dye</span></label>
+          <label><input type="radio" name="set" value="watcher"><i class="pv-watcher"></i><span>The Watcher</span></label>
+          <label><input type="radio" name="set" value="grimoire"><i class="pv-grimoire"></i><span>The Grimoire</span></label>
+          <label><input type="radio" name="set" value="spirit"><i class="pv-spirit"></i><span>Spirit Board</span></label>
+          <label><input type="radio" name="set" value="remaining"><i class="pv-remaining"></i><span>Remaining</span></label>
         </div>
       </div>
       <div class="fieldset">
@@ -306,6 +321,11 @@ try {
 <script src="js/news.js"></script>
 <script src="js/prices.js"></script>
 <script src="js/extras.js"></script>
+<script src="js/scene-core.js"></script>
+<script src="js/scene-watcher.js"></script>
+<script src="js/scene-grimoire.js"></script>
+<script src="js/scene-spirit.js"></script>
+<script src="js/scene-remaining.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>

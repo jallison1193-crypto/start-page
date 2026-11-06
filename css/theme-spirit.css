@@ -1,0 +1,75 @@
+/* ---------- The Spirit Board: mahogany, gilt and brass, by candlelight ---------- */
+[data-set="spirit"] {
+  --display: "Metamorphous", Georgia, serif;
+  --text: "Sorts Mill Goudy", Georgia, serif;
+  --gap: 16px; --radius: 3px;
+  --bg: #0F0603; --bg2: #0F0603; --ink: #F1E3BF; --dim: #C9B78F; --faint: #A9976F;
+  --line: rgba(226, 190, 110, 0.2); --line-strong: rgba(226, 190, 110, 0.42);
+  --pane: #120905; --pane-solid: #170C07; --field: rgba(226, 190, 110, 0.07); --hover: rgba(226, 190, 110, 0.1);
+  --ink-rgb: 241, 227, 191; --glow: 0; --on-accent: #1A0D05;
+  --sun: #E2B85C; --moon-lit: #F1E3BF; --moon-dark: #24130A;
+}
+[data-set="spirit"][data-accent] { --accent: #E2B85C; --accent-rgb: 226, 184, 92; --now: #E0623F; --now-rgb: 224, 98, 63; }
+[data-set="spirit"] body { font-size: 16px; line-height: 1.36; }
+
+/* Brass plaques, screwed to the board */
+[data-set="spirit"] .widget:not(.sp-board-on) {
+  border: 7px solid transparent; border-radius: 3px;
+  background:
+    linear-gradient(170deg, #1A0E08, #0E0603 62%) padding-box,
+    conic-gradient(from 215deg at 50% 50%, #6A4A1C, #E5C271, #8A6426, #F6DE9A, #7A5822, #CFA650, #5E3F15, #E5C271, #6A4A1C) border-box;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: 0 1px 0 rgba(255, 220, 150, 0.2), 0 12px 22px -8px rgba(0, 0, 0, 0.92), 0 3px 5px rgba(0, 0, 0, 0.7), inset 0 0 0 1px #000, inset 0 0 22px rgba(0, 0, 0, 0.7);
+}
+[data-set="spirit"] .widget:not(.sp-board-on)::after {
+  content: ""; position: absolute; inset: -6px; pointer-events: none; z-index: 2;
+  --screw-a: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.8'%3E%3Cstop offset='0' stop-color='%23FBE9B6'/%3E%3Cstop offset='.55' stop-color='%23B38A3C'/%3E%3Cstop offset='1' stop-color='%23543811'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='5.5' cy='5.5' r='4.6' fill='url(%23g)' stroke='%23291804' stroke-width='.7'/%3E%3Cpath d='M2.3 3.6L8.7 7.4' stroke='%23201204' stroke-width='1.2'/%3E%3C/svg%3E");
+  --screw-b: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11'%3E%3Cdefs%3E%3CradialGradient id='g' cx='.35' cy='.3' r='.8'%3E%3Cstop offset='0' stop-color='%23FBE9B6'/%3E%3Cstop offset='.55' stop-color='%23B38A3C'/%3E%3Cstop offset='1' stop-color='%23543811'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='5.5' cy='5.5' r='4.6' fill='url(%23g)' stroke='%23291804' stroke-width='.7'/%3E%3Cpath d='M6.8 1.8L4.2 9.2' stroke='%23201204' stroke-width='1.2'/%3E%3C/svg%3E");
+  background: var(--screw-a) left top no-repeat, var(--screw-b) right top no-repeat, var(--screw-b) left bottom no-repeat, var(--screw-a) right bottom no-repeat;
+}
+[data-set="spirit"] .widget { overflow: visible; }
+[data-set="spirit"] .body { overflow: hidden; padding: 11px 14px; }
+[data-set="spirit"] .arranging .widget .chrome { z-index: 4; }
+[data-set="spirit"] .w-head h2 { font: 400 0.9375rem/1.2 var(--display); color: var(--accent); text-shadow: 0 -1px 0 #000; }
+[data-set="spirit"] .mini, [data-set="spirit"] .tab, [data-set="spirit"] .engines button { border-radius: 2px; font-size: 0.9375rem; }
+[data-set="spirit"] .engines button[aria-pressed="true"], [data-set="spirit"] .tab[aria-selected="true"] { background: none; color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); font-weight: 400; }
+[data-set="spirit"] .note, [data-set="spirit"] .al-title, [data-set="spirit"] .news-list .nt { font-size: 1rem; line-height: 1.26; }
+[data-set="spirit"] .al-badge, [data-set="spirit"] .al-has .al-badge { font: 400 0.8125rem/1.5 var(--display); border-radius: 2px; }
+[data-set="spirit"] .wx-temp, [data-set="spirit"] .tc-day, [data-set="spirit"] .ft { font-weight: 400; letter-spacing: 0; color: var(--accent); text-shadow: 0 -1px 0 #000; }
+[data-set="spirit"] .al-ok { font: italic 400 1.5rem/1.2 var(--text); }
+[data-set="spirit"] .field-search { background: rgba(0, 0, 0, 0.35); border-color: var(--line); border-radius: 2px; }
+[data-set="spirit"] .ficon { filter: sepia(0.78) saturate(1.2) brightness(0.92); background: rgba(226, 190, 110, 0.08); border-radius: 50%; box-shadow: inset 0 0 0 1px var(--line-strong), 0 1px 3px #000; }
+[data-set="spirit"] .tile a:hover .ficon { filter: none; }
+[data-set="spirit"] .page-tab { font: 400 0.9375rem/1 var(--display); text-shadow: 0 1px 2px #000; color: #D5C396; }
+[data-set="spirit"] .page-tab[aria-current="true"] { background: none; color: var(--accent); box-shadow: inset 0 -1px 0 var(--accent); border-radius: 0; }
+[data-set="spirit"] .pill { color: #D5C396; text-shadow: 0 1px 2px #000; }
+[data-set="spirit"] .topbar { padding-top: 24px; }
+[data-set="spirit"] :is(.sheet-head h2, .modal h2) { font-family: var(--display); font-weight: 400; color: var(--accent); }
+[data-set="spirit"] :is(.btn, .input, .modal, .toast, .arrange-bar, .seg, .seg span) { border-radius: 3px !important; }
+
+/* The clock as the board: its art lies under the time and the greeting */
+[data-set="spirit"] .widget.sp-board-on { background: none; border: 0; box-shadow: none; overflow: visible; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.sp-board-on .body { padding: 0; overflow: visible; }
+.sp-art { position: absolute; inset: 0; pointer-events: none; }
+.sp-art svg { display: block; position: absolute; inset: 0; overflow: visible; }
+.sp-l { font-family: "Metamorphous", Georgia, serif; fill: url(#spGilt); stroke: #1F0D04; stroke-width: 0.35px; paint-order: stroke; filter: url(#spCut); transition: fill 0.6s; }
+.sp-l.lit { fill: #FFDD8C; filter: drop-shadow(0 0 3px #FFB347) drop-shadow(0 0 10px #FF7A1A); transition: none; }
+.sp-word { font-style: normal; }
+.sp-board-on .clock { position: absolute; inset: 0; display: block; }
+.sp-board-on .time { position: absolute; left: 50%; top: 3.5%; transform: translateX(-50%); justify-content: center; --fs: min(22cqh, 13cqi); font: 400 var(--fs)/1 var(--display); letter-spacing: 0.02em; color: #F6E4B4; text-shadow: 0 -1px 0 #000, 0 1px 0 rgba(255, 220, 150, 0.2), 0 0 26px rgba(255, 170, 70, 0.28); margin: 0; }
+.sp-board-on .time .sub { font: 400 0.24em/1.1 var(--text); padding-top: 0.5em; text-shadow: 0 1px 2px #000; }
+.sp-board-on .clock-meta { position: absolute; left: 13%; right: 13%; text-align: center; }
+.sp-board-on .greet { display: none; }
+.sp-spelled { margin: 0; min-height: 2.5em; cursor: pointer; font: italic 400 1.3125rem/1.24 var(--text); color: #F6E9C7; text-shadow: 0 1px 3px #000, 0 0 12px rgba(0, 0, 0, 0.8); text-wrap: balance; }
+.sp-board-on .date, .sp-board-on .wxline { font-size: 0.9375rem; color: #D6C59C; text-shadow: 0 1px 2px #000; margin: 0; }
+.sp-board-on .wxline { display: none; }
+
+/* Above everything: the room's flicker, and the planchette */
+.sp-dark { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 52%, transparent 34%, rgba(5, 2, 1, 0.58) 100%); }
+.sp-planchette { position: absolute; left: 0; top: 0; width: 150px; height: 189px; transform-origin: 75px 56.5px; will-change: transform; filter: drop-shadow(0 10px 7px rgba(0, 0, 0, 0.72)) drop-shadow(0 2px 2px rgba(0, 0, 0, 0.6)); }
+.sp-planchette svg { display: block; }
+.pv-spirit { --p:
+  radial-gradient(ellipse 7px 10px at 62% 52%, transparent 0 3px, #D5A94C 3.5px 4px, #3A1A0A 4.5px 100%),
+  radial-gradient(circle at 18% 22%, #E5C271 0 3px, transparent 3.5px),
+  radial-gradient(circle at 82% 22%, #E5C271 0 2.4px, transparent 3px),
+  repeating-linear-gradient(174deg, #4A200D 0 3px, #33150A 3px 7px, #5A2A12 7px 8px); }

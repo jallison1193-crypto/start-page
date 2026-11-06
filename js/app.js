@@ -10,7 +10,11 @@ const SETS = {
   fractal:  { name: 'Fractal', accent: 'violet', bg: 'fractal' },
   phosphor: { name: 'Phosphor', accent: 'amber', bg: 'none' },
   ashfall:  { name: 'Ashfall', accent: 'ember', bg: 'ash' },
-  tiedye:   { name: 'Tie-dye', accent: 'violet', bg: 'tiedye' }
+  tiedye:   { name: 'Tie-dye', accent: 'violet', bg: 'tiedye' },
+  watcher:  { name: 'The Watcher', accent: 'amber', bg: 'scene' },
+  grimoire: { name: 'The Grimoire', accent: 'rose', bg: 'scene' },
+  spirit:   { name: 'The Spirit Board', accent: 'amber', bg: 'scene' },
+  remaining: { name: 'Remaining', accent: 'silver', bg: 'scene' }
 };
 const rgbList = (s) => s.split(',').map((v) => Number(v) / 255);
 function applyTheme(animate) {
@@ -31,6 +35,9 @@ function applyTheme(animate) {
     alpha: parseFloat(cs.getPropertyValue('--dust-alpha')) || 1
   });
   const bg = SETS[settings.set].bg || 'dust';
+  // The art themes run their own scene in place of the shared backgrounds
+  scene.set(bg === 'scene' ? settings.set : null, settings.dust);
+  sizeRows();
   const light = theme === 'light';
   const shader = bg === 'fractal' || bg === 'tiedye';
   const BACKS = { fractal: [[0.957, 0.949, 0.98], [0.016, 0.012, 0.04]], tiedye: [[0.965, 0.933, 0.875], [0.04, 0.027, 0.063]] };
@@ -39,7 +46,7 @@ function applyTheme(animate) {
   }, bg);
   if (!shader) fx.set(false);
   sky.setStyle(bg === 'ash' ? 'ash' : 'dust');
-  sky.setEnabled(settings.dust && (bg === 'dust' || bg === 'ash' || (shader && !drawn)));
+  sky.setEnabled(bg !== 'scene' && settings.dust && (bg === 'dust' || bg === 'ash' || (shader && !drawn)));
 }
 matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => applyTheme(true));
 
@@ -998,7 +1005,7 @@ function syncSettingsForm() {
 
 const onRadio = (name, fn) => document.querySelectorAll(`input[name="${name}"]`).forEach((r) => r.addEventListener('change', () => { if (r.checked) fn(r.value); }));
 // Each theme set brings its own accent; you can still pick a different one afterwards
-onRadio('set', (v) => { settings.set = v; settings.accent = SETS[v].accent; saveSettings(); syncSettingsForm(); applyTheme(true); refresh('search'); });
+onRadio('set', (v) => { settings.set = v; settings.accent = SETS[v].accent; saveSettings(); syncSettingsForm(); applyTheme(true); renderBoard(); });
 onRadio('theme', (v) => { settings.theme = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
 onRadio('schedule', (v) => { settings.schedule = v; saveSettings(); syncSettingsForm(); applyTheme(true); });
 onRadio('accent', (v) => { settings.accent = v; saveSettings(); applyTheme(false); });

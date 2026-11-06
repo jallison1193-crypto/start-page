@@ -1,0 +1,50 @@
+/* ---------- Remaining: black, bone, and one red square ---------- */
+[data-set="remaining"] {
+  --display: "Bodoni Moda", "Didot", serif;
+  --text: "Schibsted Grotesk", system-ui, sans-serif;
+  --gap: 24px; --radius: 0;
+  --bg: #000; --bg2: #000; --ink: #EDE8DC; --dim: #A9A497; --faint: #8C877B;
+  --line: rgba(237, 232, 220, 0.12); --line-strong: rgba(237, 232, 220, 0.26);
+  --pane: #000; --pane-solid: #000; --field: rgba(237, 232, 220, 0.05); --hover: rgba(237, 232, 220, 0.08);
+  --ink-rgb: 237, 232, 220; --glow: 0; --on-accent: #000;
+  --sun: #EDE8DC; --moon-lit: #EDE8DC; --moon-dark: #1A1916;
+}
+[data-set="remaining"][data-accent] { --accent: #EDE8DC; --accent-rgb: 237, 232, 220; --now: #E83A54; --now-rgb: 232, 58, 84; }
+
+/* Widgets are holes cut out of your life: no frames, no glass */
+[data-set="remaining"] .widget, [data-set="remaining"] .widget.bare { background: #000; border: 0; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+[data-set="remaining"] .w-head h2 { font: italic 400 1rem/1.2 var(--display); color: var(--dim); }
+[data-set="remaining"] .body { padding: 14px 16px; }
+
+/* Numbers set like the dates on a headstone */
+[data-set="remaining"] .time { font: 400 var(--fs)/0.9 var(--display); font-variation-settings: "opsz" 96; letter-spacing: -0.02em; text-shadow: none; margin: 0; }
+[data-set="remaining"] .clock-l { --fs: min(52cqh, 31cqi); padding: 2px 4px; }
+[data-set="remaining"] .clock-m { --fs: min(70cqh, 20cqi); }
+[data-set="remaining"] .clock-w { --fs: min(70cqh, 12cqi); }
+[data-set="remaining"] .clock-s { --fs: min(48cqh, 30cqi); }
+[data-set="remaining"] .clock-l .time { margin-bottom: 14px; }
+[data-set="remaining"] .time .sub { font: 400 0.17em/1.1 var(--text); padding-top: 0.42em; letter-spacing: 0; }
+[data-set="remaining"] .greet { font: italic 400 1.5rem/1.2 var(--display); font-variation-settings: "opsz" 24; margin-bottom: 8px !important; }
+[data-set="remaining"] .date, [data-set="remaining"] .wxline { font-size: 0.875rem; color: var(--dim); }
+.rm-left { margin: 10px 0 0 !important; font-size: 0.875rem; color: var(--dim); }
+.rm-left strong { font-weight: 500; color: var(--now); font-variant-numeric: tabular-nums; }
+[data-set="remaining"] .clock-m .rm-left, [data-set="remaining"] .clock-s .rm-left { display: none; }
+[data-set="remaining"] .wx-temp, [data-set="remaining"] .al-ok, [data-set="remaining"] .tc-day, [data-set="remaining"] .ft { font-family: var(--display); font-weight: 400; font-variation-settings: "opsz" 96; letter-spacing: -0.02em; }
+[data-set="remaining"] .al-ok { font-style: italic; font-size: 1.625rem; }
+[data-set="remaining"] .al-has .al-badge { background: var(--now); color: #000; }
+[data-set="remaining"] .ficon { filter: grayscale(1); background: none; border-radius: 0; box-shadow: inset 0 0 0 1px var(--line); transition: filter 0.3s; }
+[data-set="remaining"] .tile a:hover .ficon { filter: none; }
+[data-set="remaining"] :is(.mini, .pill, .btn, .tab, .engines button, .page-tab, .field-search, .input, .tile a, .proj, .news-list a, .al-row, .sheet, .modal, .toast, .arrange-bar, kbd, .seg, .seg span) { border-radius: 0 !important; }
+[data-set="remaining"] .field-search { background: none; border: 0; border-bottom: 1px solid var(--line-strong); padding-left: 0; }
+[data-set="remaining"] .field-search:focus-within { border-bottom-color: var(--ink); }
+[data-set="remaining"] .engines button[aria-pressed="true"], [data-set="remaining"] .tab[aria-selected="true"] { background: none; color: var(--ink); font-weight: 500; box-shadow: inset 0 -1px 0 var(--ink); }
+[data-set="remaining"] .page-tabs, [data-set="remaining"] .top-actions { background: #000; }
+[data-set="remaining"] .page-tab[aria-current="true"] { background: none; box-shadow: inset 0 -1px 0 var(--now); }
+.rm-tip { position: absolute; left: 0; top: 0; padding: 5px 10px; background: #000; color: #EDE8DC; font: 400 0.8125rem/1.3 "Schibsted Grotesk", system-ui, sans-serif; box-shadow: 0 0 0 1px rgba(237, 232, 220, 0.4); white-space: nowrap; }
+.rm-tip[hidden], .rm-ask[hidden] { display: none; }
+.rm-ask { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); pointer-events: auto; height: 38px; padding: 0 16px; border: 0; background: #E83A54; color: #000; font: 500 0.875rem/1 "Schibsted Grotesk", system-ui, sans-serif; cursor: pointer; }
+.rm-ask:hover { background: #FF5A72; }
+.pv-remaining { --p: linear-gradient(#000, #000) 50% 50% / 44% 40% no-repeat,
+  radial-gradient(#E83A54 1.4px, transparent 1.8px) 32% 64% / 100% 100% no-repeat,
+  repeating-linear-gradient(90deg, rgba(216, 210, 194, 0.65) 0 2px, transparent 2px 4px),
+  repeating-linear-gradient(0deg, #000 0 1px, transparent 1px 4px), #000; }

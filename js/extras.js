@@ -228,16 +228,18 @@ function renderDecide(b) {
 
 // Remaining: your life in weeks
 let life = store.get('sp.life', { birth: '', years: 85 });
+async function editLife() {
+  const v = await formDialog({ title: 'Your weeks', fields: [
+    { key: 'birth', label: 'Birth date (stays in this browser)', type: 'date', value: life.birth },
+    { key: 'years', label: 'Years you’re assuming', type: 'number', min: 1, value: life.years }
+  ], validate: (x) => (!x.birth ? 'Add your birth date.' : '') });
+  if (!v || v === ASK_EXTRA) return;
+  life = { birth: v.birth, years: +v.years || 85 };
+  store.set('sp.life', life); refresh('remaining');
+  scene.api?.lifeChanged?.();
+}
 function renderRemaining(b, size) {
-  const edit = async () => {
-    const v = await formDialog({ title: 'Your weeks', fields: [
-      { key: 'birth', label: 'Birth date (stays in this browser)', type: 'date', value: life.birth },
-      { key: 'years', label: 'Years you’re assuming', type: 'number', min: 1, value: life.years }
-    ], validate: (x) => (!x.birth ? 'Add your birth date.' : '') });
-    if (!v || v === ASK_EXTRA) return;
-    life = { birth: v.birth, years: +v.years || 85 };
-    store.set('sp.life', life); refresh('remaining');
-  };
+  const edit = editLife;
   if (!life.birth) {
     b.innerHTML = '<div class="w-head"><h2>Weeks remaining</h2></div><p class="note">See your life in weeks. A statistical guess, not a prophecy.</p><button class="btn sm" type="button" style="margin-top:8px;align-self:flex-start">Add your birth date</button>';
     b.querySelector('button').addEventListener('click', edit);
