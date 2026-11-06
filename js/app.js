@@ -21,7 +21,7 @@ const SET_HINTS = {
   orrery: 'Every planet is where it really is today. Hold a blank part of the page to crank it through time, and let go to come back. Point at a planet to see how far out it is.',
   grimoire: 'Your cursor is a candle, so look in the margins. Drag a blank part of the page to turn it.',
   spirit: 'Make the Clock Large and it becomes the board. Click the greeting for another.',
-  remaining: 'Hover a square to see which week it is. The more widgets on a page, the smaller your weeks get.'
+  remaining: 'Hover a lamp to see which week it is. The more widgets on a page, the smaller the lamps get.'
 };
 const rgbList = (s) => s.split(',').map((v) => Number(v) / 255);
 function applyTheme(animate) {
