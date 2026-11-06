@@ -147,43 +147,6 @@ function moonPath(p, r = 30) {
   return `M0 ${-r} A${r} ${r} 0 0 ${outer} 0 ${r} A${rx} ${r} 0 0 ${term} 0 ${-r}Z`;
 }
 
-// ---------- SEPTA trains (their API only allows other sites through JSONP) ----------
-let transit = { data: null, at: 0, error: '', station: '' };
-function jsonp(url) {
-  return new Promise((resolve, reject) => {
-    const cb = 'septa_' + uid();
-    const s = document.createElement('script');
-    // Leave a do-nothing callback behind, so a reply that arrives after the timeout is ignored quietly
-    const done = () => { clearTimeout(timer); window[cb] = () => { delete window[cb]; }; s.remove(); };
-    const timer = setTimeout(() => { done(); reject(new Error('timeout')); }, 10000);
-    window[cb] = (data) => { done(); resolve(data); };
-    s.onerror = () => { done(); reject(new Error('network')); };
-    s.src = `${url}&callback=${cb}`;
-    document.head.append(s);
-  });
-}
-async function loadTransit() {
-  if (!isOn('transit') || document.hidden) return;
-  const station = settings.station.trim() || 'Lansdowne';
-  try {
-    const raw = await jsonp(`https://www3.septa.org/api/Arrivals/index.php?station=${encodeURIComponent(station)}&results=6`);
-    const groups = raw && typeof raw === 'object' ? Object.values(raw)[0] : null;
-    if (!Array.isArray(groups)) throw new Error('station');
-    const dirs = {};
-    for (const g of groups) for (const [dir, list] of Object.entries(g || {})) dirs[dir] = Array.isArray(list) ? list : [];
-    if (!Object.keys(dirs).length) throw new Error('station');
-    transit = { data: dirs, at: Date.now(), error: '', station };
-  } catch (e) {
-    transit = {
-      data: null, at: 0, station,
-      error: e.message === 'station'
-        ? `SEPTA lists no trains for “${station}”. Check the station name in Settings.`
-        : 'Train times aren’t loading. They will try again in a minute.'
-    };
-  }
-  refresh('transit');
-}
-
 // ---------- Sites ----------
 const DEFAULT_SITES = {
   active: 'ai',
@@ -305,7 +268,6 @@ const WIDGETS = {
   search:   { name: 'Search', blurb: 'Google, DuckDuckGo, ChatGPT or Claude', sizes: ['m', 'w'], render: renderSearch },
   weather:  { name: 'Weather', blurb: 'Now, the next hours and the week ahead', sizes: ['s', 'm', 'l', 'w'], render: renderWeather },
   sky:      { name: 'Sky', blurb: 'Moon phase, sunrise, sunset and daylight left', sizes: ['s', 'm', 'l'], render: renderSky },
-  transit:  { name: 'Station board', blurb: 'All Regional Rail departures at one station', sizes: ['m', 'l'], render: renderTransit },
   sites:    { name: 'Sites', blurb: 'Your links, in groups', sizes: ['m', 'l', 'w'], render: renderSites, multi: true },
   projects: { name: 'Projects', blurb: 'What you’re building, with GitHub activity', sizes: ['m', 'l', 'w'], render: renderProjects },
   calendar: { name: 'Calendar', blurb: 'Today, or the whole month', sizes: ['s', 'l'], render: renderCalendar },
@@ -323,7 +285,7 @@ function renderClock(b, size) {
   b.querySelector('.time').addEventListener('click', () => {
     settings.use24 = !settings.use24;
     saveSettings(); syncSettingsForm(); tick();
-    refresh('weather'); refresh('sky'); refresh('transit');
+    refresh('weather'); refresh('sky');
   });
   b.querySelector('.greet').addEventListener('click', nextGreeting);
   tick();
@@ -451,28 +413,6 @@ function renderSky(b, size) {
   }
   b.innerHTML = `<div class="w-head"><h2>${h >= 17 || h < 5 ? 'Tonight’s sky' : 'Today’s sky'}</h2></div>
     <div class="sky-row sky-${size}">${moon}${sun}</div>${arc}`;
-}
-
-function trainRow(t) {
-  const sched = new Date(String(t.sched_time || t.depart_time).replace(' ', 'T'));
-  const lateMatch = /^(\d+)\s*min/i.exec(t.status || '');
-  const late = lateMatch ? +lateMatch[1] : 0;
-  const mins = Math.round((sched.getTime() + late * 60000 - Date.now()) / 60000);
-  const status = /on time/i.test(t.status || '') ? '' : late ? `${late} min late` : (t.status || '');
-  const details = [`${t.line} line`, `train ${t.train_id}`, t.track ? `track ${t.track}` : ''].filter(Boolean).join(', ');
-  return { mins, html: `<li title="${esc(details)}"><span class="tt">${fmtTime(sched)}</span><span class="td">${esc(t.destination)}${status ? `<em>${esc(status)}</em>` : ''}</span><span class="tin">${mins <= 0 ? 'Now' : mins < 90 ? mins + ' min' : ''}</span></li>` };
-}
-function renderTransit(b, size) {
-  const station = transit.station || settings.station || 'Lansdowne';
-  const head = `<div class="w-head"><h2>Trains from ${esc(station)}</h2>${transit.at ? `<span class="w-meta">Updated ${fmtTime(transit.at)}</span>` : ''}</div>`;
-  if (transit.error) { b.innerHTML = head + `<p class="note">${esc(transit.error)}</p>`; return; }
-  if (!transit.data) { b.innerHTML = head + '<p class="note">Loading departures…</p>'; return; }
-  const n = size === 'l' ? 6 : 2;
-  const cols = Object.entries(transit.data).map(([dir, list]) => {
-    const rows = list.map(trainRow).filter((r) => r.mins >= -1).slice(0, n).map((r) => r.html).join('');
-    return `<div class="dir"><h3>${esc(dir)}</h3><ol>${rows || '<li class="none">No more trains listed</li>'}</ol></div>`;
-  }).join('');
-  b.innerHTML = head + `<div class="trains">${cols}</div>`;
 }
 
 // The Sites data lives on the widget, so several Sites widgets can each have their own groups
@@ -1048,7 +988,6 @@ function syncSettingsForm() {
   $('use24').checked = settings.use24;
   $('seconds').checked = settings.seconds;
   if (document.activeElement !== $('name')) $('name').value = settings.name;
-  if (document.activeElement !== $('station')) $('station').value = settings.station;
   $('locName').textContent = settings.location.name;
   $('swipePages').checked = settings.swipe;
   syncScheduleHint();
@@ -1072,23 +1011,17 @@ $('ghUser').addEventListener('change', (e) => {
   saveSettings(); ghError = '';
   refresh('projects'); loadGitHub(true);
 });
-$('use24').addEventListener('change', (e) => { settings.use24 = e.target.checked; saveSettings(); tick(); refresh('weather'); refresh('sky'); refresh('transit'); syncScheduleHint(); });
+$('use24').addEventListener('change', (e) => { settings.use24 = e.target.checked; saveSettings(); tick(); refresh('weather'); refresh('sky'); syncScheduleHint(); });
 $('seconds').addEventListener('change', (e) => { settings.seconds = e.target.checked; saveSettings(); tick(); });
 $('name').addEventListener('input', (e) => { settings.name = e.target.value; saveSettings(); tick(); syncGreetingForm(); });
 $('name').addEventListener('change', () => refresh('search'));
-$('station').addEventListener('change', (e) => {
-  settings.station = e.target.value.trim() || 'Lansdowne';
-  saveSettings();
-  transit = { data: null, at: 0, error: '', station: settings.station };
-  refresh('transit'); loadTransit();
-});
 $('resetLayout').addEventListener('click', async () => {
-  const yes = await ask({ title: 'Reset the layout?', text: 'Pages and widgets go back to how they started. Your sites, notes, tasks and routes stay.', ok: 'Reset layout', danger: true });
+  const yes = await ask({ title: 'Reset the layout?', text: 'Pages and widgets go back to how they started. Your sites, notes and tasks stay.', ok: 'Reset layout', danger: true });
   if (!yes) return;
   const kept = allItems().find((i) => i.type === 'sites' && i.cfg.sites)?.cfg.sites;
   pages = defaultPages(kept);
   currentPage = 0;
-  savePages(); renderBoard(); renderWidgetList(); loadTransit(); loadGitHub(); loadExtras();
+  savePages(); renderBoard(); renderWidgetList(); loadGitHub(); loadAlerts(true); loadExtras();
 });
 
 // Location: search by city name (Open-Meteo geocoding) or ask the browser
@@ -1141,7 +1074,7 @@ $('locHere').addEventListener('click', () => {
 
 // Backup and restore everything in one file
 $('backupAll').addEventListener('click', () => {
-  const data = { app: 'start-page', version: 4, settings, pages, projects, tasks, trips, notes: store.get('sp.notes', ''), extras: backupExtras() };
+  const data = { app: 'start-page', version: 4, settings, pages, projects, tasks, notes: store.get('sp.notes', ''), extras: backupExtras() };
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   a.download = 'start-page-backup.json';
@@ -1166,14 +1099,13 @@ $('restoreFile').addEventListener('change', async (e) => {
       else if (Array.isArray(parsed.layout)) pages = pagesFromOldLayout(parsed.layout, parsed.sites);
       tasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
       if (Array.isArray(parsed.projects)) projects = parsed.projects;
-      if (Array.isArray(parsed.trips)) trips = parsed.trips;
       if (parsed.extras) restoreExtras(parsed.extras);
       store.set('sp.notes', parsed.notes || '');
     }
-    saveSettings(); savePages(); saveTasks(); saveProjects(); saveTrips();
+    saveSettings(); savePages(); saveTasks(); saveProjects();
     currentPage = 0;
     applyTheme(true); renderBoard(); syncSettingsForm();
-    loadWeather(true); loadTransit(); loadGitHub(true); loadExtras();
+    loadWeather(true); loadAlerts(true); loadGitHub(true); loadExtras();
     toast('Restored from backup.');
   } catch {
     toast('That file isn’t a start page backup. Pick a start-page-backup.json file.');
@@ -1195,7 +1127,7 @@ function tick() {
   if (isOn('focus') || focus.endsAt) focusTick();
   if (now.getMinutes() !== lastMinute) {
     // Once a minute: theme schedule, the sun's position and train countdowns
-    if (lastMinute !== -1) { applyTheme(true); refresh('sky'); refresh('transit'); refresh('routes'); refresh('countdown'); }
+    if (lastMinute !== -1) { applyTheme(true); refresh('sky'); refresh('alerts'); refresh('countdown'); }
     lastMinute = now.getMinutes();
   }
   if (now.getDate() !== lastDay) { lastDay = now.getDate(); refresh('calendar'); }
@@ -1219,12 +1151,11 @@ addEventListener('storage', (e) => {
   if (e.key === 'sp.tasks') { tasks = store.get('sp.tasks', []); refresh('tasks'); }
   if (e.key === 'sp.focus') { focus = store.get('sp.focus', focus); refresh('focus'); }
   if (e.key === 'sp.projects') { projects = store.get('sp.projects', projects); refresh('projects'); }
-  if (e.key === 'sp.trips') { trips = store.get('sp.trips', trips); refresh('routes'); }
   if (e.key === 'sp.settings' || e.key === 'sp.pages') {
     settings = { ...DEFAULT_SETTINGS, ...store.get('sp.settings', {}) };
     pages = normalizePages(store.get('sp.pages', pages));
     applyTheme(true); renderBoard(); syncSettingsForm();
   }
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadWeather(); loadTransit(); loadGitHub(); loadRoutes(); loadNews(); loadExtras(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { loadWeather(); loadGitHub(); loadAlerts(); loadNews(); loadExtras(); } });
 

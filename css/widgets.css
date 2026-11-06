@@ -83,40 +83,45 @@ body.swipe-mode { overflow: hidden; height: 100dvh; display: flex; flex-directio
 .extra-left[hidden] { display: none; }
 .actions { align-items: center; }
 
-/* ---------- Routes ---------- */
-.rt-now { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex: none; }
-.rt-now strong { font: 300 1.6rem/1.15 var(--display); letter-spacing: -0.01em; white-space: nowrap; }
-.rt-now span { font-size: 0.8125rem; color: var(--dim); white-space: nowrap; }
-.rt-legs { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.8125rem; min-height: 0; }
-.rt-legs li { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.rt-legs.rt-l { flex-direction: column; flex-wrap: nowrap; gap: 8px; margin-top: 12px; }
-.rt-badge {
-  flex: none; padding: 1px 7px; border-radius: 6px; font-weight: 600; font-size: 0.75rem;
-  color: var(--on-accent); background: var(--accent); max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+/* ---------- Service alerts ---------- */
+.al-badge {
+  flex: none; display: inline-block; padding: 1px 7px; border-radius: 6px; font-weight: 600; font-size: 0.75rem; line-height: 1.45;
+  color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); white-space: nowrap;
 }
-.rt-time { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.rt-where { min-width: 0; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.rt-legs em { font-style: normal; color: var(--now); white-space: nowrap; font-size: 0.75rem; }
-.rt-legs i { font-style: normal; color: var(--faint); white-space: nowrap; font-size: 0.75rem; }
-.rt-later { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); flex: none; }
-.rt-later h3 { margin: 0 0 4px; font-size: 0.75rem; font-weight: 500; color: var(--faint); }
-.rt-later ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 0.8125rem; color: var(--dim); }
-.rt-later li { display: flex; justify-content: space-between; gap: 12px; }
-.rt-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-
-.leg-list { list-style: none; margin: 14px 0 10px; padding: 0; display: grid; gap: 10px; counter-reset: leg; }
-.leg { padding: 12px; border-radius: 12px; background: var(--field); box-shadow: inset 0 0 0 1px var(--line); }
-.leg label { margin-bottom: 8px; }
-.leg-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.leg-top .leg-kind { margin: 0; flex: 1; min-width: 0; }
-.leg-walk { display: flex !important; align-items: center; gap: 6px; margin: 0 !important; white-space: nowrap; font-size: 0.75rem !important; }
-.leg-walk .input { width: 56px; height: 34px; margin: 0; padding: 0 6px; }
-.leg-bus { display: grid; grid-template-columns: 96px 1fr 1fr; gap: 8px; }
-.leg-rail { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.leg-bus label, .leg-rail label { margin-bottom: 0; min-width: 0; }
-.leg-bus[hidden], .leg-rail[hidden] { display: none; }
-.trip-hint { font-size: 0.8125rem; color: var(--dim); margin: 10px 0 !important; }
-.trip-hint a { color: var(--accent); }
+.al-lines { display: flex; flex-wrap: wrap; gap: 4px; }
+.al-clear { display: flex; flex-direction: column; gap: 10px; margin-top: auto; }
+.al-ok { margin: 0; font: 300 1.35rem/1.2 var(--display); letter-spacing: -0.01em; }
+.al-has .al-badge { color: var(--on-accent); background: var(--accent); box-shadow: none; }
+.al-list { list-style: none; margin: 0 -8px; padding: 0 0 8px; min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: none; }
+.al-list::-webkit-scrollbar { display: none; }
+.al-row {
+  width: 100%; padding: 6px 8px; border: 0; border-radius: 10px; background: none; color: var(--ink); cursor: pointer; text-align: left;
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1px 8px; align-items: start; font: inherit;
+}
+.al-row:hover { background: var(--hover); }
+.al-row .al-lines { grid-row: span 2; max-width: 110px; padding-top: 1px; }
+.al-title { font-size: 0.875rem; line-height: 1.32; }
+.al-row[aria-expanded="false"] .al-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.al-when { font-size: 0.75rem; color: var(--dim); }
+.al-item.soon .al-title { color: var(--dim); }
+.al-item.soon .al-badge { color: var(--ink); background: none; box-shadow: inset 0 0 0 1px var(--line-strong); }
+.al-more { padding: 2px 8px 10px; font-size: 0.8125rem; line-height: 1.42; color: var(--dim); }
+.al-more p { margin: 0 0 8px; }
+.al-acts { display: flex; flex-wrap: wrap; gap: 4px; }
+.al-acts a { text-decoration: none; display: inline-flex; align-items: center; }
+.al-count { display: flex; flex-direction: column; gap: 2px; min-height: 0; margin-top: auto; }
+.al-count strong { font: 300 2rem/1 var(--display); color: var(--accent); }
+.al-count span { font-size: 0.75rem; line-height: 1.3; color: var(--dim); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.al-stale { margin: 2px 0 0; font-size: 0.75rem; color: var(--now); }
+.al-restore { align-self: flex-start; padding: 2px 0; border: 0; background: none; color: var(--faint); cursor: pointer; font-size: 0.75rem; }
+.al-restore:hover { color: var(--ink); }
+.lines-list { list-style: none; margin: 10px 0 12px; padding: 0 4px 0 0; max-height: min(46vh, 380px); overflow-y: auto; }
+.ln-group h3 { margin: 12px 0 4px; font-size: 0.8125rem; font-weight: 600; color: var(--dim); }
+.ln-group ul { list-style: none; margin: 0; padding: 0; }
+.ln-group label { display: flex !important; align-items: center; gap: 10px; margin: 0 !important; padding: 5px 4px; font-size: 0.875rem !important; color: var(--ink) !important; cursor: pointer; border-radius: 8px; }
+.ln-group label:hover { background: var(--hover); }
+.ln-group input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.lines-list [hidden] { display: none; }
 
 /* ---------- News ---------- */
 .news-list { list-style: none; margin: 0 -8px; padding: 0 0 10px; min-height: 0; flex: 1; overflow-y: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(#000 calc(100% - 14px), transparent); mask-image: linear-gradient(#000 calc(100% - 14px), transparent); }

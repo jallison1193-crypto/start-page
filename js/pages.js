@@ -18,7 +18,7 @@ function defaultPages(firstSites) {
   return [
     { id: uid(), name: 'Home', items: [
       newItem('clock', 'l'), newItem('weather', 'm'), newItem('sky', 'm'),
-      newItem('search', 'm'), newItem('routes', 'm'),
+      newItem('search', 'm'), newItem('alerts', 'm'),
       newItem('sites', 'm', true, { sites: firstSites || structuredClone(DEFAULT_SITES) }), newItem('notes', 'm')
     ]},
     { id: uid(), name: 'Desk', items: [
@@ -32,7 +32,7 @@ function defaultPages(firstSites) {
 function offWidgets() {
   return [
     newItem('sites', 'm', false, { title: 'Work', sites: { active: 'w1', groups: [{ id: 'w1', name: 'Work', sites: [] }] } }),
-    newItem('tasks', 'm', false), newItem('focus', 's', false), newItem('transit', 'm', false),
+    newItem('tasks', 'm', false), newItem('focus', 's', false),
     newItem('obits', 'm', false), newItem('air', 's', false), newItem('quakes', 'm', false),
     newItem('launches', 'm', false), newItem('iss', 's', false), newItem('remaining', 'm', false),
     newItem('course', 's', false), newItem('prompts', 'm', false), newItem('countdown', 's', false),
@@ -84,8 +84,8 @@ function pagesFromOldLayout(old, oldSites) {
   const on = old.filter((w) => w.on);
   for (const w of on) {
     const cfg = w.id === 'sites' ? { sites: oldSites || store.get('np.sites', null) || structuredClone(DEFAULT_SITES) } : {};
-    // The trains board made way for the route tracker in its old spot
-    add(newItem(w.id === 'transit' ? 'routes' : w.id, w.id === 'transit' ? 'm' : w.size, true, cfg));
+    // The trains board made way for Service alerts in its old spot
+    add(newItem(w.id === 'transit' ? 'alerts' : w.id, w.id === 'transit' ? 'm' : w.size, true, cfg));
   }
   for (const [type, size] of [['news', 'l'], ['reading', 'm'], ['prices', 'm']]) add(newItem(type, size));
   const last = made[made.length - 1];
@@ -498,9 +498,8 @@ $('addWidgetBtn').addEventListener('click', () => {
 $('addPage').addEventListener('click', addPage);
 $('swipePages').addEventListener('change', (e) => { settings.swipe = e.target.checked; saveSettings(); renderBoard(); });
 function refreshData(type) {
-  if (type === 'transit') loadTransit();
+  if (type === 'alerts') loadAlerts(true);
   if (type === 'projects') loadGitHub();
-  if (type === 'routes') loadRoutes();
   if (type === 'news') loadNews();
   loadExtras();
 }

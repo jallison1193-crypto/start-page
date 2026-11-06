@@ -67,7 +67,6 @@ const DEFAULT_SETTINGS = {
   units: 'f',
   engine: 'google',
   location: { name: 'Lansdowne, Pennsylvania', lat: 39.9387, lon: -75.2716 },
-  station: 'Lansdowne',
   github: 'jallison1193-crypto',
   swipe: true,            // pages side by side; off stacks them and you scroll down
   greetStyle: 'dark',     // a preset in greetings.js, or custom

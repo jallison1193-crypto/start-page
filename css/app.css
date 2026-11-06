@@ -398,18 +398,6 @@ kbd {
 .arc text { fill: var(--dim); font: 8px var(--text); }
 .arc .cap { fill: var(--ink); font-size: 9px; }
 
-/* ---------- Trains ---------- */
-.trains { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 0; flex: 1; }
-.dir { min-width: 0; }
-.dir h3 { margin: 0 0 4px; font-size: 0.75rem; font-weight: 500; color: var(--faint); }
-.dir ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.dir li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: 10px; }
-.tt { font: 300 1.05rem/1.3 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.td { font-size: 0.8125rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.td em { font-style: normal; color: var(--now); margin-left: 4px; }
-.tin { font-size: 0.75rem; color: var(--accent); white-space: nowrap; }
-.dir .none { display: block; font-size: 0.8125rem; color: var(--faint); }
-
 /* ---------- Sites ---------- */
 .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; }
 .tab {
