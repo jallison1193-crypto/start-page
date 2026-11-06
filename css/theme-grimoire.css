@@ -165,6 +165,12 @@
   repeating-linear-gradient(0deg, rgba(60, 30, 8, 0.32) 0 1px, transparent 1px 6px),
   linear-gradient(90deg, #A68855, #D8C08F 28%, #C9AE7C 47%, #C9AE7C 53%, #D8C08F 72%, #A68855); }
 
+/* Each page of the spread is one column, so no widget can ever lie across the spine. With four
+   columns a small widget pushed its neighbours over it, and below 1000px every wide widget did. */
+@media (min-width: 761px) {
+  [data-set="grimoire"] { --cols: 2; }
+  [data-set="grimoire"] :is(.w-s, .w-m, .w-l, .w-w) { grid-column: span 1; }
+}
 @media (max-width: 760px) {
   [data-set="grimoire"] .page-inner { padding-inline: 18px; }
   [data-set="grimoire"] .gm-ivy, [data-set="grimoire"] .gm-marg, [data-set="grimoire"] .gm-ghost { display: none; }
