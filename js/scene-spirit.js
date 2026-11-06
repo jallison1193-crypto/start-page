@@ -197,6 +197,42 @@ scene.define('spirit', (S) => {
     board = art;
     target = ''; shown = '';
   }
+  // Where it waits between messages. A fixed spot left it sitting on the first letter of the
+  // greeting whenever the line ran wide or the board was small, so it looks for the nearest place
+  // to the lower left where its footprint covers nothing: no greeting, date, time or carved letters.
+  let restKey = '', rest = null;
+  function restSpot(rect) {
+    const key = `${rect.left},${rect.top},${rect.width},${rect.height}|${target}|${spelled?.textContent.length}`;
+    if (key === restKey && rest) return rest;
+    restKey = key;
+    const blocks = [];
+    const add = (r) => { if (r.width && r.height) blocks.push(r); };
+    const range = document.createRange();
+    for (const el of boardEl.querySelectorAll('.sp-spelled, .date')) { range.selectNodeContents(el); [...range.getClientRects()].forEach(add); }
+    const time = boardEl.querySelector('.time');
+    if (time) add(time.getBoundingClientRect());
+    board?.querySelectorAll('.sp-l').forEach((n) => add(n.getBoundingClientRect()));
+    // The footprint around the window: the teardrop narrows below it, so it's a little inside the full box
+    const L = 52, T = 40, R = 52, B = 96, pad = 6, spill = 18;
+    const prefX = rect.left + rect.width * 0.1, prefY = rect.top + rect.height * 0.72;
+    let best = { x: prefX, y: prefY }, bestScore = Infinity;
+    for (let x = rect.left + L - spill; x <= rect.right - R + spill; x += 8) {
+      if (x - L < 0 || x + R > W) continue;
+      for (let y = rect.top + T; y <= rect.bottom - B + spill; y += 8) {
+        if (y + B > H) continue;
+        let cover = 0;
+        for (const b of blocks) {
+          const w = Math.min(x + R, b.right + pad) - Math.max(x - L, b.left - pad);
+          const h = Math.min(y + B, b.bottom + pad) - Math.max(y - T, b.top - pad);
+          if (w > 0 && h > 0) cover += w * h;
+        }
+        const score = cover * 50 + Math.hypot(x - prefX, y - prefY);
+        if (score < bestScore) { bestScore = score; best = { x, y }; }
+      }
+    }
+    rest = best;
+    return rest;
+  }
   const letterPos = (c) => {
     if (!board) return null;
     const n = board.querySelector(`[data-c="${c}"]`);
@@ -269,7 +305,7 @@ scene.define('spirit', (S) => {
         const over = P.seen && t - P.at < 4000 && P.x > rect.left && P.x < rect.right && P.y > rect.top && P.y < rect.bottom;
         if (over) { wantX = P.x; wantY = P.y; }
         // Between messages it rests off to one side, clear of the writing
-        else { wantX = rect.left + rect.width * 0.1; wantY = rect.top + rect.height * 0.72; }
+        else { const r = restSpot(rect); wantX = r.x; wantY = r.y; }
         if (!script.length || step >= script.length) {
           if (t > nextHaunt && !P.seen || t > nextHaunt && t - P.at > 25000) {
             nextHaunt = t + 80000 + Math.random() * 120000;
