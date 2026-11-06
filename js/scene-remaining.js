@@ -1,8 +1,8 @@
 'use strict';
 // ---------- Remaining ----------
-// Every week of your life, flowing around whatever widgets you've placed. The more you put on a page,
-// the smaller your weeks get. Spent weeks are filled in, the rest are hollow, and this week beats
-// like a heart, each beat rippling out through the whole grid.
+// Every week of your life as one lamp on an LED board, flowing around whatever widgets you've placed.
+// The more you put on a page, the smaller the lamps get. Weeks you've lived are lit, the rest are dark
+// lenses, and this week breathes slowly, like a standby light. Nothing else moves.
 const MONTH_SEASON = ['Winter', 'Winter', 'Spring', 'Spring', 'Spring', 'Summer', 'Summer', 'Summer', 'Fall', 'Fall', 'Fall', 'Winter'];
 const WEEK_MS = 7 * 864e5;
 
@@ -30,10 +30,8 @@ scene.define('remaining', (S) => {
   S.over.append(tip, ask);
 
   let W = 0, H = 0, dpr = 1, cells = [], pitch = 8, cols = 0, grid = null, base = null, weeks = lifeWeeks();
-  let baked = false, reveal = 0, waves = [], lastBeat = 0, beatCount = 0, fade = 1, hover = -1, startAt = performance.now();
-  const BEAT = 1060;                              // about 57 beats a minute: calm, for now
-  const RIPPLE_LIFE = 2000;
-  const SPENT = [216, 210, 194], ROSE = [232, 58, 84];
+  let baked = false, reveal = 0, fade = 1, hover = -1, startAt = performance.now(), sprites = null;
+  const BREATH = 5200;                            // one slow breath every five seconds or so
 
   function size() {
     W = innerWidth; H = innerHeight;
@@ -87,35 +85,57 @@ scene.define('remaining', (S) => {
     S.widgetRects().forEach((r) => { if (r.el.dataset.type === 'clock') stampLeft(r.el); });
   }
   const gap = () => Math.max(1, pitch * 0.2);
+  // One lamp, drawn once and stamped everywhere: a lit one with its glow, a dark lens, and the hover ring.
+  // The glow spills past the lamp's own square, which is what makes a field of them read as light.
+  function makeSprites() {
+    const s = pitch - gap(), round = s >= 3.5;
+    const box = Math.ceil(pitch * 2.4), px = Math.ceil(box * dpr);
+    const make = (paint) => { const c = document.createElement('canvas'); c.width = c.height = px; const g = c.getContext('2d'); g.scale(dpr, dpr); paint(g, box / 2, s / 2); return c; };
+    const lamp = (g, m, r, core, edge) => {
+      if (!round) { g.fillStyle = edge; g.fillRect(m - r, m - r, r * 2, r * 2); return; }
+      const f = g.createRadialGradient(m - r * 0.25, m - r * 0.3, 0, m, m, r);
+      f.addColorStop(0, core); f.addColorStop(1, edge);
+      g.fillStyle = f; g.beginPath(); g.arc(m, m, r * 0.92, 0, Math.PI * 2); g.fill();
+    };
+    sprites = {
+      box, round,
+      lit: make((g, m, r) => {
+        const h = g.createRadialGradient(m, m, r * 0.5, m, m, r * 2.3);
+        h.addColorStop(0, 'rgba(255, 150, 40, 0.28)'); h.addColorStop(1, 'rgba(255, 150, 40, 0)');
+        g.fillStyle = h; g.fillRect(0, 0, box, box);
+        lamp(g, m, r, '#FFE3A8', '#FF9E2C');
+      }),
+      dark: make((g, m, r) => lamp(g, m, r, 'rgba(255, 190, 110, 0.13)', 'rgba(255, 160, 60, 0.06)')),
+      ring: make((g, m, r) => { g.strokeStyle = '#FFF4DC'; g.lineWidth = 1.2; if (round) { g.beginPath(); g.arc(m, m, r + 1.2, 0, Math.PI * 2); g.stroke(); } else g.strokeRect(m - r - 1, m - r - 1, r * 2 + 2, r * 2 + 2); })
+    };
+  }
+  const stamp = (g, sprite, c) => {
+    const s = pitch - gap(), off = (sprites.box - s) / 2;
+    g.drawImage(sprite, c.x - off, c.y - off, sprites.box, sprites.box);
+  };
   // The still part of the picture is drawn once and reused every frame
   function paintBase() {
+    makeSprites();
     base = document.createElement('canvas');
     base.width = canvas.width; base.height = canvas.height;
     const b = base.getContext('2d');
     b.scale(dpr, dpr);
-    b.fillStyle = '#000'; b.fillRect(0, 0, W, H);
-    const s = pitch - gap();
-    const hollow = s >= 5;
-    b.strokeStyle = 'rgba(216,210,194,.42)'; b.lineWidth = 0.75;
-    b.fillStyle = 'rgba(216,210,194,.24)';
-    // Once your life has filled in on arrival, spent weeks are just part of this picture
+    b.fillStyle = '#050404'; b.fillRect(0, 0, W, H);
+    for (let i = weeks.lived; i < cells.length; i++) stamp(b, sprites.dark, cells[i]);
+    // Once your life has lit up on arrival, lived weeks are just part of this picture
     if (reveal >= 1) {
       for (let i = 0; i < Math.min(weeks.lived, cells.length); i++) {
-        b.fillStyle = `rgba(216,210,194,${(lifeColor(i) * 0.9).toFixed(3)})`;
-        b.fillRect(cells[i].x, cells[i].y, s, s);
+        b.globalAlpha = lifeColor(i);
+        stamp(b, sprites.lit, cells[i]);
       }
-      b.fillStyle = 'rgba(216,210,194,.24)';
+      b.globalAlpha = 1;
     }
     baked = reveal >= 1;
-    for (let i = weeks.lived; i < cells.length; i++) {
-      const c = cells[i];
-      if (hollow) b.strokeRect(c.x + 0.35, c.y + 0.35, s - 0.7, s - 0.7); else b.fillRect(c.x, c.y, s, s);
-    }
   }
   const lifeColor = (i) => {
-    // Decades alternate in strength, so you can pick out your twenties at a glance
+    // Decades alternate in brightness, so you can pick out your twenties at a glance
     const decade = Math.floor(i / 521.775);
-    return decade % 2 ? 1 : 0.78;
+    return decade % 2 ? 0.86 : 0.6;   // a little under full, so a page of lit weeks doesn't glare
   };
   function describe(i) {
     if (!weeks.known) return `Week ${(i + 1).toLocaleString()} of ${weeks.total.toLocaleString()}`;
@@ -146,48 +166,14 @@ scene.define('remaining', (S) => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
     ctx.drawImage(base, 0, 0, W, H);
-    const s = pitch - gap();
-    // On arrival your life so far fills in, oldest first, then the heart starts
+    // On arrival the board powers up: your life so far lights in order, oldest first
     if (reveal < 1) reveal = frozen ? 1 : Math.min(1, (t - startAt) / 2400);
     const eased = reveal < 1 ? 1 - Math.pow(1 - reveal, 2.4) : 1;
     const shown = Math.floor(Math.min(weeks.lived, cells.length) * eased);
-    const beatOn = reveal >= 1 && weeks.known && !frozen;
-    if (beatOn && t - lastBeat > BEAT) {
-      lastBeat = t; beatCount++;
-      const c = cells[Math.min(weeks.lived, cells.length - 1)];
-      // The heart always beats. The ripple only spreads while you're around to see it.
-      if (c && t - P.at < 60000) waves.push({ x: c.x + s / 2, y: c.y + s / 2, t });
-    }
-    waves = waves.filter((w) => t - w.t < RIPPLE_LIFE);
-    // How far each ripple has reached, sampled per square
-    const speed = 0.34;
-    const lift = (c) => {
-      let v = 0;
-      for (const w of waves) {
-        const age = t - w.t, reach = age * speed;
-        const d = Math.hypot(c.x - w.x, c.y - w.y);
-        const off = (d - reach) / 74;
-        if (off > -1.6 && off < 1.6) v += Math.exp(-off * off * 2.6) * Math.exp(-d / 620) * Math.max(0, 1 - age / RIPPLE_LIFE);
-      }
-      return v;
-    };
     if (reveal >= 1 && !baked) paintBase();
     if (!baked) {
-      for (let i = 0; i < shown; i++) {
-        ctx.fillStyle = `rgba(216,210,194,${(lifeColor(i) * 0.9).toFixed(3)})`;
-        ctx.fillRect(cells[i].x, cells[i].y, s, s);
-      }
-    }
-    // Only the squares the ripple is passing through get touched
-    if (waves.length) {
-      const count = Math.min(weeks.lived, cells.length);
-      for (let i = 0; i < cells.length; i++) {
-        const c = cells[i];
-        const v = lift(c);
-        if (v < 0.03) continue;
-        ctx.fillStyle = i < count ? `rgba(255,250,235,${Math.min(0.8, v * 0.6).toFixed(2)})` : `rgba(232,58,84,${Math.min(0.62, v * 0.62).toFixed(2)})`;
-        ctx.fillRect(c.x, c.y, s, s);
-      }
+      for (let i = 0; i < shown; i++) { ctx.globalAlpha = lifeColor(i); stamp(ctx, sprites.lit, cells[i]); }
+      ctx.globalAlpha = 1;
     }
     // Hover: the week, and the year around it
     const over = P.seen && t - P.at < 8000 ? indexAt(P.x, P.y) : -1;
@@ -198,30 +184,24 @@ scene.define('remaining', (S) => {
     }
     if (over >= 0) {
       const from = Math.max(0, over - (over % 52)), to = Math.min(cells.length, from + 52);
-      ctx.fillStyle = 'rgba(255,255,255,.2)';
-      for (let i = from; i < to; i++) ctx.fillRect(cells[i].x, cells[i].y, s, s);
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(cells[over].x - 1, cells[over].y - 1, s + 2, s + 2);
+      ctx.globalAlpha = 0.45;
+      for (let i = from; i < to; i++) stamp(ctx, sprites.lit, cells[i]);
+      ctx.globalAlpha = 1;
+      stamp(ctx, sprites.ring, cells[over]);
       tip.style.transform = `translate(${Math.min(P.x + 14, W - 320)}px, ${Math.max(P.y - 42, 6)}px)`;
     }
-    // This week: two beats, a pause
+    // This week breathes: a slow rise and fall, never fully dark, so it's easy to find and easy to ignore
     if (reveal >= 1 && weeks.known && weeks.lived < cells.length) {
-      const c = cells[weeks.lived];
-      const ph = frozen ? 0.5 : ((t - lastBeat) / BEAT);
-      const pulse = Math.exp(-Math.pow((ph - 0.03) * 13, 2)) + Math.exp(-Math.pow((ph - 0.3) * 15, 2)) * 0.68;
-      const big = s * (1 + pulse * 0.9);
-      ctx.globalAlpha = 0.22 + pulse * 0.32;
-      ctx.fillStyle = `rgb(${ROSE})`;
-      ctx.beginPath(); ctx.arc(c.x + s / 2, c.y + s / 2, big * 1.7, 0, Math.PI * 2); ctx.fill();
+      const breath = frozen ? 1 : (1 - Math.cos((t % BREATH) / BREATH * Math.PI * 2)) / 2;
+      ctx.globalAlpha = 0.3 + breath * 0.7;
+      stamp(ctx, sprites.lit, cells[weeks.lived]);
       ctx.globalAlpha = 1;
-      ctx.fillStyle = pulse > 0.6 ? '#FF7B90' : `rgb(${ROSE})`;
-      ctx.fillRect(c.x + (s - big) / 2, c.y + (s - big) / 2, big, big);
     }
     // A new layout fades up rather than popping in
     if (fade < 1) {
       fade = frozen ? 1 : Math.min(1, fade + (dt || 1) * 2.6);
       ctx.globalAlpha = 1 - fade;
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#050404';
       ctx.fillRect(0, 0, W, H);
       ctx.globalAlpha = 1;
     }
@@ -236,13 +216,13 @@ scene.define('remaining', (S) => {
 
   size();
   return {
-    // A two-beat pulse reads fine at 20 frames a second; idle, it needs even fewer
-    get fps() { return reveal < 1 || performance.now() - S.pointer.at < 60000 ? 20 : 10; },
+    // Powering up wants smooth frames; a five-second breath is smooth at a dozen
+    get fps() { return reveal < 1 ? 30 : performance.now() - S.pointer.at < 1500 ? 20 : 12; },
     resize() { size(); flow(S.widgetRects()); },
     moved(rects) { if (!cells.length) flow(rects); },
     layout(rects) { flow(rects); if (!S.running()) frame(performance.now(), 0, true); },
     frame,
     decorate(item, body) { if (item.type === 'clock') stampLeft(body); },
-    lifeChanged() { reveal = 0; baked = false; startAt = performance.now(); waves = []; flow(S.widgetRects()); }
+    lifeChanged() { reveal = 0; baked = false; startAt = performance.now(); flow(S.widgetRects()); }
   };
 });

@@ -20,10 +20,10 @@ Clock, Search, Weather, Sky, Service alerts, Sites, Quick note, Projects, News, 
 
 Pick one under **Settings > Appearance > Theme set**. You can change whenever you like.
 
-- **The Watcher:** eyes in the dark behind solid slabs. They follow you, flinch when you click, and stare if you stop moving. Every few minutes something much larger looks through the gaps.
+- **The Orrery:** a brass model of the solar system in a dark room, lit only by its own Sun. Every planet sits where it really is today, painted to look like itself and lit from the Sun's side, so you see real crescents and full faces, and the Moon is at its real phase. Hold a blank part of the page to crank it through time, and let go to wind back. Point at a planet to see how far it is from the Sun.
 - **The Grimoire:** the page is an open book. Your cursor is a candle, and hidden writing shows up in its light. Turn pages with the tabs, arrow keys or wheel, or grab the page margin and drag.
 - **The Spirit Board:** make the Clock Large and it becomes the board. The planchette spells out your greeting, and when left alone it starts on its own.
-- **Remaining:** every week of your life, flowing around your widgets. Add your birth date, and it stays in this browser. Hover a square to see which week it is.
+- **Remaining:** an amber LED board with one lamp for every week of your life, flowing around your widgets. Weeks you have lived are lit, and this week breathes slowly. Add your birth date, and it stays in this browser. Hover a lamp to see which week it is.
 
 ## How it's built
 
@@ -39,7 +39,7 @@ No build step. Open `index.html` through any web server.
 | `js/greetings.js` | Greeting styles |
 | `js/alerts.js` | Service alerts and the line list |
 | `js/scene-core.js` | The engine behind the four art themes |
-| `js/scene-*.js`, `css/theme-*.css` | The Watcher, The Grimoire, The Spirit Board and Remaining |
+| `js/scene-*.js`, `css/theme-*.css` | The Orrery, The Grimoire, The Spirit Board and Remaining |
 | `js/news.js`, `js/prices.js`, `js/extras.js` | Other widgets |
 | `scripts/fetch-news.mjs` | Collects headlines into `data/news.json`, run every 30 minutes by GitHub Actions |
 | `scripts/fetch-alerts.mjs` | Decodes SEPTA's alerts into `data/alerts.json`, run every 15 minutes by GitHub Actions |

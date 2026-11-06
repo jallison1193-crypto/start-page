@@ -76,6 +76,8 @@ const DEFAULT_SETTINGS = {
 };
 const savedSettings = store.get('sp.settings', null);
 let settings = { ...DEFAULT_SETTINGS, ...(savedSettings || {}) };
+// The Watcher was retired for The Orrery
+if (settings.set === 'watcher') settings.set = 'orrery';
 if (!savedSettings) {
   // Carry over choices made on the first version of the page
   settings.use24 = store.get('np.24h', false);
